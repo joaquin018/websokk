@@ -31,7 +31,7 @@ var db *pgx.Conn
 func initDB() {
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
-		dbURL = "postgres://postgres:postgres@dbserver:5432/comandadb"
+		dbURL = "postgres://postgres:postgres@pgdb:5432/comandadb"
 	}
 
 	log.Printf("Intentando conectar a: %s\n", dbURL)

@@ -1,21 +1,29 @@
 services:
-  dbserver:
+  pgdb:
     image: postgres:18.3
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: comandadb
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - pgdata_new:/var/lib/postgresql/data
+    networks:
+      - comandas_net
 
   backend:
     build: .
     ports:
       - "8080:8080"
     environment:
-      DATABASE_URL: postgres://postgres:postgres@dbserver:5432/comandadb
+      DATABASE_URL: postgres://postgres:postgres@pgdb:5432/comandadb
+    networks:
+      - comandas_net
     depends_on:
-      - dbserver
+      - pgdb
+
+networks:
+  comandas_net:
+    driver: bridge
 
 volumes:
-  postgres_data:
+  pgdata_new:
