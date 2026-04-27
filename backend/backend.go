@@ -81,7 +81,7 @@ var upgrader = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { retu
 func main() {
 	initDB()
 	if db != nil {
-		defer db.Close(context.Background())
+		defer db.Close()
 	}
 
 	hub := newHub()
@@ -93,6 +93,7 @@ func main() {
 		rows, _ := db.Query(context.Background(), "SELECT id, name FROM tables ORDER BY name ASC")
 		var tables []Table
 		if rows != nil {
+			defer rows.Close()
 			for rows.Next() {
 				var t Table
 				rows.Scan(&t.ID, &t.Name)
@@ -112,6 +113,7 @@ func main() {
 			http.Error(w, fmt.Sprintf("Error al consultar la DB: %v", err), http.StatusInternalServerError)
 			return
 		}
+		defer rows.Close()
 		var orders []Order
 		for rows.Next() {
 			var o Order
@@ -125,6 +127,7 @@ func main() {
 		rows, _ := db.Query(context.Background(), "SELECT id, name FROM tables ORDER BY name ASC")
 		var tables []Table
 		if rows != nil {
+			defer rows.Close()
 			for rows.Next() {
 				var t Table
 				rows.Scan(&t.ID, &t.Name)
@@ -163,6 +166,7 @@ func main() {
 		rows, _ := db.Query(context.Background(), "SELECT id, name, price, description FROM products ORDER BY id DESC")
 		var products []Product
 		if rows != nil {
+			defer rows.Close()
 			for rows.Next() {
 				var p Product
 				rows.Scan(&p.ID, &p.Name, &p.Price, &p.Description)
@@ -215,6 +219,7 @@ func main() {
 		rows, _ := db.Query(context.Background(), "SELECT name, price FROM products WHERE name ILIKE $1 LIMIT 5", "%"+q+"%")
 		var products []Product
 		if rows != nil {
+			defer rows.Close()
 			for rows.Next() {
 				var p Product
 				rows.Scan(&p.Name, &p.Price)
@@ -241,6 +246,7 @@ func main() {
 		rows, _ := db.Query(context.Background(), "SELECT id, name FROM tables ORDER BY id ASC")
 		var tables []Table
 		if rows != nil {
+			defer rows.Close()
 			for rows.Next() {
 				var t Table
 				rows.Scan(&t.ID, &t.Name)

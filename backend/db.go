@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // --- MODELOS ---
@@ -29,8 +29,8 @@ type Table struct {
 	Name string
 }
 
-// Global DB Connection
-var db *pgx.Conn
+// Global DB Connection Pool
+var db *pgxpool.Pool
 
 // Inicializar Base de Datos con Reintento
 func initDB() {
@@ -44,7 +44,7 @@ func initDB() {
 	var err error
 	// Intentar conectar hasta 15 veces (30 segundos total)
 	for i := 0; i < 15; i++ {
-		db, err = pgx.Connect(context.Background(), dbURL)
+		db, err = pgxpool.New(context.Background(), dbURL)
 		if err == nil {
 			break
 		}
