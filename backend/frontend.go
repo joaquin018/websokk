@@ -84,6 +84,26 @@ const layoutHeader = `
             document.getElementById('view-order').classList.add('hidden');
             document.getElementById('view-tables').classList.add('animate-in', 'fade-in', 'slide-in-from-top-10', 'duration-500');
         }
+        function switchTab(tab, btn) {
+            // Ocultar todas las secciones principales
+            document.getElementById('section-comandas').classList.add('hidden');
+            document.getElementById('section-cocina').classList.add('hidden');
+            document.getElementById('section-config').classList.add('hidden');
+            
+            // Mostrar la seleccionada
+            document.getElementById('section-' + tab).classList.remove('hidden');
+            
+            // Actualizar botones del nav
+            document.querySelectorAll('.nav-btn').forEach(b => {
+                b.classList.remove('bg-blue-600', 'text-white');
+                b.classList.add('text-zinc-500');
+            });
+            btn.classList.add('bg-blue-600', 'text-white');
+            btn.classList.remove('text-zinc-500');
+
+            // Si vamos a comandas, resetear a vista de mesas por si acaso
+            if (tab === 'comandas') backToTables();
+        }
     </script>
     <style>
         body { background-color: #09090b; color: #fafafa; -webkit-tap-highlight-color: transparent; }
@@ -248,53 +268,171 @@ var configTmpl = template.Must(template.New("config").Parse(`
     </main>
 `))
 
-func RenderComandasPage(w http.ResponseWriter, tables []Table) {
-	comandasTmpl.Execute(w, map[string]interface{}{"Tables": tables})
-}
-
-func RenderConfigPage(w http.ResponseWriter, tables []Table) {
+func RenderMainPage(w http.ResponseWriter, tables []Table, orders []Order, products []Product) {
+	w.Write([]byte(layoutHeader))
+	
+	// Contenedor de COMANDAS
 	w.Write([]byte(`
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Configuraciones</title>
-    <meta name="view-transition" content="same-origin">
-    <script src="https://unpkg.com/htmx.org@1.9.11"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://instant.page/5.2.0" type="module" integrity="sha384-jnZyxPjiipSbm6WFEJrqQUqzHKyeWMLzQoUf69GON5m929OdzP64VGupxzGTzG++"></script>
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => { navigator.serviceWorker.register('/sw.js'); });
-        }
-        function formatName(el) { el.value = el.value.toLowerCase().replace(/\b\w/g, l => l.toUpperCase()); }
-        function formatSentence(el) { if (el.value.length > 0) el.value = el.value.charAt(0).toUpperCase() + el.value.slice(1).toLowerCase(); }
-        function formatPrice(el) {
-            let val = el.value.replace(/\D/g, "");
-            if (val === "") { el.value = ""; return; }
-            el.value = "$" + new Intl.NumberFormat("es-CL").format(val);
-        }
-    </script>
-    <style>
-        body { background-color: #09090b; color: #fafafa; }
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
-    </style>
-</head>
-<body class="bg-zinc-950 text-zinc-50 antialiased">
-    <nav class="sticky top-0 z-50 bg-zinc-950/80 backdrop-blur-xl border-b border-zinc-800/50 px-4 md:px-12 py-4">
-        <div class="max-w-7xl mx-auto flex items-center gap-6">
-            <a href="/" class="p-2 hover:bg-zinc-800 rounded-xl transition-all text-zinc-400 hover:text-white">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-            </a>
-            <h1 class="text-xl md:text-2xl font-bold tracking-tight">Configuraciones</h1>
+    <div id="section-comandas" class="app-view">
+        <main class="max-w-6xl mx-auto p-4 md:p-8 pb-32 relative">
+            <div id="view-tables" class="relative z-10 mt-4 md:mt-10">
+                <header class="mb-12 text-center">
+                    <h2 class="text-3xl md:text-5xl font-black mb-2 tracking-tighter">Seleccionar Mesa</h2>
+                    <p class="text-zinc-500 text-[10px] md:text-xs uppercase font-bold tracking-[0.2em]">Toca una mesa para empezar el pedido</p>
+                </header>
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">`))
+	for _, t := range tables {
+		fmt.Fprintf(w, `
+                    <button type="button" onclick="selectTable('%s', this)" class="group flex flex-col items-center justify-center gap-6 aspect-video md:aspect-square bg-zinc-900/40 border border-zinc-800/50 rounded-[2.5rem] transition-all hover:bg-blue-600/10 hover:border-blue-500/50 active:scale-95">
+                        <div class="p-4 bg-zinc-950/50 rounded-2xl group-hover:bg-blue-500 group-hover:text-white transition-all text-zinc-600">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h18v18H3z"/><path d="M9 3v18"/><path d="M15 3v18"/><path d="M3 9h18"/><path d="M3 15h18"/></svg>
+                        </div>
+                        <span class="font-black text-lg md:text-xl tracking-tight">%s</span>
+                    </button>`, t.Name, t.Name)
+	}
+	w.Write([]byte(`
+                </div>
+            </div>
+            <div id="view-order" class="hidden relative z-10 max-w-3xl mx-auto">
+                <button onclick="backToTables()" class="flex items-center gap-2 text-zinc-500 hover:text-white mb-8 group transition-all">
+                    <div class="p-2 rounded-full group-hover:bg-zinc-900 transition-all"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></div>
+                    <span class="text-xs font-black uppercase tracking-widest">Volver a Mesas</span>
+                </button>
+                <header class="mb-10">
+                    <p class="text-blue-500 text-[10px] uppercase font-black tracking-[0.3em] mb-2">Nuevo Pedido</p>
+                    <h2 class="text-4xl md:text-6xl font-black tracking-tighter uppercase"><span id="selected-mesa-display">Mesa</span></h2>
+                </header>
+                <div class="bg-zinc-900/40 border border-zinc-800/50 p-6 md:p-10 rounded-[3rem] backdrop-blur-xl shadow-2xl">
+                    <div class="mb-10">
+                        <label class="block text-[10px] text-zinc-500 uppercase font-black mb-4 ml-1 tracking-widest">Buscador de Productos</label>
+                        <div class="relative group">
+                            <input type="text" id="product-search" hx-get="/api/products/search" hx-trigger="keyup changed delay:300ms" hx-target="#search-results" placeholder="Escribe el nombre del producto..." class="w-full bg-zinc-950 border-2 border-zinc-800/50 p-5 pl-14 rounded-3xl outline-none focus:border-blue-600 transition-all text-xl font-bold">
+                            <div class="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-blue-500 transition-colors"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></div>
+                        </div>
+                        <div id="search-results" class="mt-4 grid grid-cols-1 gap-2"></div>
+                    </div>
+                    <form hx-post="/api/orders" hx-ext="ws" ws-send hx-on::after-request="this.reset(); backToTables()" class="flex flex-col gap-6">
+                        <input type="hidden" name="mesa" id="mesa-input">
+                        <div>
+                            <label class="block text-[10px] text-zinc-500 uppercase font-black mb-3 ml-1 tracking-widest">Detalles del Pedido</label>
+                            <textarea id="order-text" name="plato" placeholder="Los productos seleccionados aparecerán aquí..." class="w-full bg-zinc-950/50 border border-zinc-800 p-4 md:p-5 rounded-2xl md:rounded-3xl focus:ring-2 focus:ring-blue-500 outline-none h-48 transition-all font-medium text-lg leading-relaxed" required></textarea>
+                        </div>
+                        <button type="submit" class="group relative overflow-hidden bg-white text-black py-5 md:py-6 rounded-2xl md:rounded-3xl font-black text-xl shadow-2xl active:scale-95 transition-all">
+                            <span class="relative z-10 flex items-center justify-center gap-3 uppercase">Confirmar y Enviar</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Contenedor de COCINA (Oculto inicialmente) -->
+    <div id="section-cocina" class="app-view hidden">
+        <main class="max-w-7xl mx-auto p-4 md:p-8 pb-32">
+            <header class="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
+                <div>
+                    <h2 class="text-4xl md:text-6xl font-black tracking-tighter uppercase mb-2">Panel de Cocina</h2>
+                    <p class="text-zinc-500 text-[10px] md:text-xs uppercase font-bold tracking-[0.2em] flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> Sistema en tiempo real activo
+                    </p>
+                </div>
+            </header>
+            <div hx-ext="ws" ws-connect="/ws" class="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-12">
+                <div class="kanban-col flex flex-col gap-6">
+                    <h3 class="flex items-center gap-3 text-zinc-400 font-black uppercase text-[10px] tracking-[0.3em] mb-2 px-2">
+                        <span class="w-2 h-2 rounded-full bg-amber-500"></span> Pendientes
+                    </h3>
+                    <div id="col-pendiente" class="flex flex-col gap-6 min-h-[100px]">`))
+	for _, o := range orders {
+		if o.Estado == "pendiente" {
+			w.Write([]byte(RenderOrderCard(o.ID, o.Mesa, o.Plato, o.Estado)))
+		}
+	}
+	w.Write([]byte(`</div>
+                </div>
+                <div class="kanban-col flex flex-col gap-6">
+                    <h3 class="flex items-center gap-3 text-zinc-400 font-black uppercase text-[10px] tracking-[0.3em] mb-2 px-2">
+                        <span class="w-2 h-2 rounded-full bg-blue-500"></span> En Proceso
+                    </h3>
+                    <div id="col-proceso" class="flex flex-col gap-6 min-h-[100px]">`))
+	for _, o := range orders {
+		if o.Estado == "proceso" {
+			w.Write([]byte(RenderOrderCard(o.ID, o.Mesa, o.Plato, o.Estado)))
+		}
+	}
+	w.Write([]byte(`</div>
+                </div>
+                <div class="kanban-col flex flex-col gap-6">
+                    <h3 class="flex items-center gap-3 text-zinc-400 font-black uppercase text-[10px] tracking-[0.3em] mb-2 px-2">
+                        <span class="w-2 h-2 rounded-full bg-green-500"></span> Completado
+                    </h3>
+                    <div id="col-completado" class="flex flex-col gap-6 min-h-[100px]">`))
+	for _, o := range orders {
+		if o.Estado == "completado" {
+			w.Write([]byte(RenderOrderCard(o.ID, o.Mesa, o.Plato, o.Estado)))
+		}
+	}
+	w.Write([]byte(`</div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Contenedor de CONFIGURACIÓN (Oculto inicialmente) -->
+    <div id="section-config" class="app-view hidden">
+        <main class="max-w-6xl mx-auto p-4 md:p-8 pb-32">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-12">
+                <div class="lg:col-span-4 flex flex-col gap-8">
+                    <div class="bg-zinc-900/40 p-8 rounded-[2.5rem] border border-zinc-800/50 backdrop-blur-md">
+                        <h3 class="text-zinc-500 font-black uppercase text-[10px] tracking-[0.3em] mb-6">Capacidad del Local</h3>
+                        <form hx-post="/api/tables" hx-target="#main-table-list" class="flex flex-col gap-6">
+                            <div>
+                                <label class="block text-[10px] text-zinc-600 uppercase font-bold mb-3 ml-1 tracking-widest">¿Cuántas mesas tienes?</label>
+                                <input type="number" name="count" placeholder="Ej: 10" class="w-full bg-zinc-950 border border-zinc-800 p-5 rounded-3xl outline-none focus:ring-2 focus:ring-blue-500 text-2xl font-bold text-center">
+                            </div>
+                            <button type="submit" class="bg-white text-black py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-zinc-200 transition-all">Generar Mesas</button>
+                        </form>
+                    </div>
+                </div>
+                <div class="lg:col-span-8 flex flex-col gap-8">
+                    <div class="bg-zinc-900/40 p-8 rounded-[2.5rem] border border-zinc-800/50 backdrop-blur-md">
+                        <h3 class="text-zinc-500 font-black uppercase text-[10px] tracking-[0.3em] mb-6">Nuevo Producto</h3>
+                        <form hx-post="/api/products" hx-target="#product-list" hx-on::after-request="this.reset()" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <input type="text" name="name" oninput="formatName(this)" placeholder="Nombre" class="bg-zinc-950 border border-zinc-800 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                            <input type="text" name="price" oninput="formatPrice(this)" placeholder="Precio" class="bg-zinc-950 border border-zinc-800 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                            <textarea name="description" placeholder="Descripción..." class="md:col-span-2 bg-zinc-950 border border-zinc-800 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 h-32"></textarea>
+                            <button type="submit" class="md:col-span-2 bg-blue-600 py-5 rounded-2xl font-black uppercase text-xs tracking-widest">Guardar</button>
+                        </form>
+                    </div>
+                    <div id="product-list" class="grid grid-cols-1 gap-4">`))
+	for _, p := range products {
+		RenderProductItem(w, p)
+	}
+	w.Write([]byte(`</div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- NAVEGACIÓN INFERIOR (Zero Latency) -->
+    <nav class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-sm">
+        <div class="bg-zinc-900/80 backdrop-blur-2xl border border-zinc-800/50 p-2 rounded-[2.5rem] flex items-center justify-around shadow-2xl shadow-black">
+            <button onclick="switchTab('comandas', this)" class="nav-btn flex-1 flex flex-col items-center gap-1 py-3 px-6 rounded-[2rem] transition-all bg-blue-600 text-white">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 12h6"/><path d="M9 16h6"/><path d="M9 8h6"/></svg>
+                <span class="text-[9px] font-black uppercase tracking-widest">Comandas</span>
+            </button>
+            <button onclick="switchTab('cocina', this)" class="nav-btn flex-1 flex flex-col items-center gap-1 py-3 px-6 rounded-[2rem] transition-all text-zinc-500 hover:text-white">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+                <span class="text-[9px] font-black uppercase tracking-widest">Cocina</span>
+            </button>
+            <button onclick="switchTab('config', this)" class="nav-btn flex-1 flex flex-col items-center gap-1 py-3 px-6 rounded-[2rem] transition-all text-zinc-500 hover:text-white">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                <span class="text-[9px] font-black uppercase tracking-widest">Ajustes</span>
+            </button>
         </div>
     </nav>
 `))
-	configTmpl.Execute(w, map[string]interface{}{"Tables": tables})
+
 	w.Write([]byte(layoutFooter))
 }
 
@@ -311,62 +449,6 @@ func RenderTableItem(w io.Writer, t Table) {
 		</div>`, t.Name)
 }
 
-func handleComandas(w http.ResponseWriter, r *http.Request) { RenderComandasPage(w, nil) }
-func handleConfig(w http.ResponseWriter, r *http.Request)   { RenderConfigPage(w, nil) }
-
-func RenderCocinaPage(w http.ResponseWriter, orders []Order) {
-	w.Write([]byte(layoutHeader))
-	w.Write([]byte(`
-    <main class="p-4 md:p-8 relative" hx-ext="ws" ws-connect="/ws">
-        <div class="absolute top-40 left-1/4 -inset-10 bg-blue-500/5 blur-3xl rounded-full w-96 h-96 opacity-20"></div>
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 relative z-10">
-            <div class="flex flex-col gap-5">
-                <div class="flex items-center gap-3 px-4"><div class="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></div><h2 class="font-black text-zinc-400 text-[10px] uppercase tracking-[0.2em]">Pendientes</h2></div>
-                <div id="pedidos-col" class="kanban-col flex flex-col gap-4 p-3 md:p-5 bg-zinc-900/20 backdrop-blur-md border border-zinc-800/50 rounded-[2.5rem] md:rounded-[3rem]">`))
-	for _, o := range orders {
-		if o.Estado == "pendiente" {
-			w.Write([]byte(RenderOrderCard(o.ID, o.Mesa, o.Plato, o.Estado)))
-		}
-	}
-	w.Write([]byte(`</div>
-            </div>
-            <div class="flex flex-col gap-5">
-                <div class="flex items-center gap-3 px-4"><div class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div><h2 class="font-black text-zinc-400 text-[10px] uppercase tracking-[0.2em]">En Proceso</h2></div>
-                <div id="proceso-col" class="kanban-col flex flex-col gap-4 p-3 md:p-5 bg-zinc-900/20 backdrop-blur-md border border-zinc-800/50 rounded-[2.5rem] md:rounded-[3rem]">`))
-	for _, o := range orders {
-		if o.Estado == "proceso" {
-			w.Write([]byte(RenderOrderCard(o.ID, o.Mesa, o.Plato, o.Estado)))
-		}
-	}
-	w.Write([]byte(`</div>
-            </div>
-            <div class="flex flex-col gap-5">
-                <div class="flex items-center gap-3 px-4"><div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div><h2 class="font-black text-zinc-400 text-[10px] uppercase tracking-[0.2em]">Completado</h2></div>
-                <div id="completado-col" class="kanban-col flex flex-col gap-4 p-3 md:p-5 bg-zinc-900/20 backdrop-blur-md border border-zinc-800/50 rounded-[2.5rem] md:rounded-[3rem]">`))
-	for _, o := range orders {
-		if o.Estado == "completado" {
-			w.Write([]byte(RenderOrderCard(o.ID, o.Mesa, o.Plato, o.Estado)))
-		}
-	}
-	w.Write([]byte(`</div>
-            </div>
-        </div>
-    </main>
-
-    <!-- NAVEGACIÓN INFERIOR (Estilo App) -->
-    <nav class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-sm">
-        <div class="bg-zinc-900/80 backdrop-blur-2xl border border-zinc-800/50 p-2 rounded-[2.5rem] flex items-center justify-around shadow-2xl shadow-black">
-            <a href="/" class="flex-1 flex flex-col items-center gap-1 py-3 px-6 rounded-[2rem] transition-all text-zinc-500 hover:text-white">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 12h6"/><path d="M9 16h6"/><path d="M9 8h6"/></svg>
-                <span class="text-[9px] font-black uppercase tracking-widest">Comandas</span>
-            </a>
-            <a href="/cocina" class="flex-1 flex flex-col items-center gap-1 py-3 px-6 rounded-[2rem] transition-all bg-blue-600 text-white">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
-                <span class="text-[9px] font-black uppercase tracking-widest">Cocina</span>
-            </a>
-        </div>
-    </nav>
-`))
 	w.Write([]byte(layoutFooter))
 }
 

@@ -91,11 +91,9 @@ func main() {
 	http.HandleFunc("/sw.js", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/javascript")
 		w.Write([]byte(`
-			const CACHE_NAME = 'comandas-v1';
+			const CACHE_NAME = 'comandas-v2';
 			const ASSETS = [
 				'/',
-				'/cocina',
-				'/config',
 				'https://unpkg.com/htmx.org@1.9.11',
 				'https://cdn.tailwindcss.com'
 			];
@@ -114,54 +112,55 @@ func main() {
 		`))
 	})
 
-	// --- RUTAS ---
+	// --- RUTA PRINCIPAL UNIFICADA (Zero Latency) ---
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if db == nil { initDB() }
-		rows, _ := db.Query(context.Background(), "SELECT id, name FROM tables ORDER BY name ASC")
+		
+		// 1. Obtener Mesas
+		rowsT, _ := db.Query(context.Background(), "SELECT id, name FROM tables ORDER BY name ASC")
 		var tables []Table
-		if rows != nil {
-			defer rows.Close()
-			for rows.Next() {
+		if rowsT != nil {
+			defer rowsT.Close()
+			for rowsT.Next() {
 				var t Table
-				rows.Scan(&t.ID, &t.Name)
+				rowsT.Scan(&t.ID, &t.Name)
 				tables = append(tables, t)
 			}
 		}
-		RenderComandasPage(w, tables)
-	})
-	http.HandleFunc("/cocina", func(w http.ResponseWriter, r *http.Request) {
-		if db == nil { initDB() }
-		if db == nil {
-			http.Error(w, "Base de datos no disponible", http.StatusServiceUnavailable)
-			return
-		}
-		rows, err := db.Query(context.Background(), "SELECT id, plato, mesa, estado FROM orders ORDER BY id ASC")
-		if err != nil {
-			http.Error(w, fmt.Sprintf("Error al consultar la DB: %v", err), http.StatusInternalServerError)
-			return
-		}
-		defer rows.Close()
+
+		// 2. Obtener Pedidos (Cocina)
+		rowsO, _ := db.Query(context.Background(), "SELECT id, plato, mesa, estado FROM orders ORDER BY id ASC")
 		var orders []Order
-		for rows.Next() {
-			var o Order
-			rows.Scan(&o.ID, &o.Plato, &o.Mesa, &o.Estado)
-			orders = append(orders, o)
-		}
-		RenderCocinaPage(w, orders)
-	})
-	http.HandleFunc("/config", func(w http.ResponseWriter, r *http.Request) {
-		if db == nil { initDB() }
-		rows, _ := db.Query(context.Background(), "SELECT id, name FROM tables ORDER BY name ASC")
-		var tables []Table
-		if rows != nil {
-			defer rows.Close()
-			for rows.Next() {
-				var t Table
-				rows.Scan(&t.ID, &t.Name)
-				tables = append(tables, t)
+		if rowsO != nil {
+			defer rowsO.Close()
+			for rowsO.Next() {
+				var o Order
+				rowsO.Scan(&o.ID, &o.Plato, &o.Mesa, &o.Estado)
+				orders = append(orders, o)
 			}
 		}
-		RenderConfigPage(w, tables)
+
+		// 3. Obtener Productos (Config)
+		rowsP, _ := db.Query(context.Background(), "SELECT id, name, price, description FROM products ORDER BY id DESC")
+		var products []Product
+		if rowsP != nil {
+			defer rowsP.Close()
+			for rowsP.Next() {
+				var p Product
+				rowsP.Scan(&p.ID, &p.Name, &p.Price, &p.Description)
+				products = append(products, p)
+			}
+		}
+
+		RenderMainPage(w, tables, orders, products)
+	})
+	
+	http.HandleFunc("/cocina", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+	})
+	
+	http.HandleFunc("/config", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
 	})
 
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
