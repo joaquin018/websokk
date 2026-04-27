@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"os"
 
+	"websokk/frontend"
+
 	"github.com/jackc/pgx/v5"
 )
 
@@ -26,8 +28,8 @@ func main() {
 	}
 
 	// Routes
-	// El handler 'handleIndex' vive en frontend.go
-	http.HandleFunc("/", handleIndex)
+	// Ahora usamos el paquete 'frontend' y su función pública 'HandleIndex'
+	http.HandleFunc("/", frontend.HandleIndex)
 
 	// API Endpoints
 	http.HandleFunc("/api/test", handleAPITest)
@@ -43,7 +45,6 @@ func main() {
 	}
 }
 
-// Lógica de la API
 func handleAPITest(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("¡Conexión Exitosa con Go! 🚀"))
 }

@@ -1,9 +1,11 @@
 FROM golang:1.26-alpine AS builder
 WORKDIR /app
-COPY go.mod go.sum ./
+COPY go.mod ./
+# Si tienes go.sum, descomenta la siguiente línea
+# COPY go.sum ./
 RUN go mod download
 COPY . .
-RUN go build -o main .
+RUN go build -o main ./backend
 
 FROM alpine:latest
 WORKDIR /root/

@@ -1,11 +1,10 @@
-package main
+package frontend
 
 import (
 	"html/template"
 	"net/http"
 )
 
-// Aquí vive todo tu HTML y componentes visuales
 var indexTmpl = template.Must(template.New("index").Parse(`
 <!DOCTYPE html>
 <html lang="es">
@@ -28,8 +27,8 @@ var indexTmpl = template.Must(template.New("index").Parse(`
         </h1>
         
         <p class="max-w-md text-zinc-400 text-lg sm:text-xl">
-            Lógica en <span class="text-blue-400">main.go</span>, Interfaz en <span class="text-blue-400">frontend.go</span>. 
-            Limpio, rápido y organizado.
+            Lógica en <span class="text-blue-400">/backend</span>, Interfaz en <span class="text-blue-400">/frontend</span>. 
+            Separación física total.
         </p>
 
         <div id="status" class="mt-4 p-4 border border-zinc-800 rounded-xl min-w-[200px]">
@@ -52,7 +51,7 @@ var indexTmpl = template.Must(template.New("index").Parse(`
 </html>
 `))
 
-// Handler para la página principal
-func handleIndex(w http.ResponseWriter, r *http.Request) {
+// HandleIndex es pública ahora (mayúscula)
+func HandleIndex(w http.ResponseWriter, r *http.Request) {
 	indexTmpl.Execute(w, nil)
 }

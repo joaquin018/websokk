@@ -13,7 +13,9 @@ services:
       - postgres_data:/var/lib/postgresql/data
 
   backend:
-    build: ./backend
+    build:
+      context: .
+      dockerfile: Dockerfile
     environment:
       DATABASE_URL: postgres://postgres:postgres@db:5432/comandadb
       PORT: 8080
