@@ -85,7 +85,7 @@ const layoutHeader = `
 
 const layoutFooter = `
     <footer class="mt-20 p-8 border-t border-zinc-900 text-center">
-        <p class="text-[10px] text-zinc-600 font-black uppercase tracking-[0.3em]">Comandas Pro v1.0</p>
+        <p class="text-[10px] text-zinc-600 font-black uppercase tracking-[0.3em]">Comandas</p>
     </footer>
 </body>
 </html>
@@ -132,8 +132,7 @@ var configTmpl = template.Must(template.New("config").Parse(layoutHeader + `
     <main class="max-w-6xl mx-auto p-4 md:p-8 relative">
         <div class="absolute top-20 left-[-10%] bg-blue-500/5 blur-[120px] rounded-full w-96 h-96 opacity-30"></div>
         <header class="mb-12">
-            <h2 class="text-4xl md:text-6xl font-black mb-2 tracking-tighter">Configuración</h2>
-            <p class="text-zinc-500 text-[10px] md:text-xs uppercase font-bold tracking-[0.2em]">Gestión del Menú</p>
+            <h2 class="text-4xl md:text-6xl font-black mb-2 tracking-tighter uppercase">Gestión del Menú</h2>
         </header>
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 md:gap-12 relative z-10">
             <div class="lg:col-span-5">
