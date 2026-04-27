@@ -1,21 +1,5 @@
-# Dependencies
-node_modules/
-/frontend/node_modules/
-/backend/vendor/
-
 # Build outputs
 /backend/main
-/frontend/dist/
-/frontend/build/
-/frontend/server/
-
-# Environment variables
-.env
-.env.local
-
-# IDEs
-.vscode/
-.idea/
 
 # Docker
 postgres_data/
