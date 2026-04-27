@@ -449,9 +449,6 @@ func RenderTableItem(w io.Writer, t Table) {
 		</div>`, t.Name)
 }
 
-	w.Write([]byte(layoutFooter))
-}
-
 func RenderProductList(w io.Writer, products []Product) {
 	if len(products) == 0 {
 		w.Write([]byte(`<div class="p-12 text-center border-2 border-dashed border-zinc-900 rounded-[2rem] text-zinc-700 font-bold uppercase text-[10px] tracking-widest">Sin productos</div>`))
