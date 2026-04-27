@@ -57,7 +57,6 @@ const layoutHeader = `
         @media (min-width: 1024px) {
             .kanban-col { min-height: 75vh; }
         }
-        /* Scrollbar suave */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 10px; }
@@ -101,7 +100,6 @@ var comandasTmpl = template.Must(template.New("comandas").Parse(layoutHeader + `
                 <h2 class="text-3xl md:text-5xl font-black mb-2 tracking-tighter">Nueva Comanda</h2>
                 <p class="text-zinc-500 text-[10px] md:text-xs uppercase font-bold tracking-[0.2em]">Panel de Camareros</p>
             </header>
-            
             <div class="mb-8 relative">
                 <label class="block text-[10px] text-blue-400 uppercase font-black mb-3 ml-1 tracking-widest">Buscador Rápido</label>
                 <div class="relative group">
@@ -112,7 +110,6 @@ var comandasTmpl = template.Must(template.New("comandas").Parse(layoutHeader + `
                 </div>
                 <div id="search-results" class="absolute w-full mt-3 z-[60] flex flex-col gap-2 drop-shadow-2xl"></div>
             </div>
-
             <form hx-post="/api/orders" hx-swap="none" hx-on::after-request="this.reset()" class="flex flex-col gap-6 bg-zinc-900/20 p-6 md:p-8 rounded-[2rem] border border-zinc-800/50 backdrop-blur-sm">
                 <div>
                     <label class="block text-[10px] text-zinc-500 uppercase font-black mb-3 ml-1 tracking-widest">Ubicación / Mesa</label>
@@ -138,7 +135,6 @@ var configTmpl = template.Must(template.New("config").Parse(layoutHeader + `
             <h2 class="text-4xl md:text-6xl font-black mb-2 tracking-tighter">Configuración</h2>
             <p class="text-zinc-500 text-[10px] md:text-xs uppercase font-bold tracking-[0.2em]">Gestión del Menú</p>
         </header>
-        
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 md:gap-12 relative z-10">
             <div class="lg:col-span-5">
                 <h3 class="text-zinc-500 uppercase text-[10px] font-black tracking-widest mb-6 ml-2">Añadir Nuevo Producto</h3>
@@ -151,7 +147,7 @@ var configTmpl = template.Must(template.New("config").Parse(layoutHeader + `
             </div>
             <div class="lg:col-span-7">
                 <h3 class="text-zinc-500 uppercase text-[10px] font-black tracking-widest mb-6 ml-2">Productos Registrados</h3>
-                <div id="product-list" hx-get="/api/products" hx-trigger="load" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-4 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
+                <div id="product-list" hx-get="/api/products" hx-trigger="load" class="grid grid-cols-1 gap-4 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
                     <div class="p-8 text-center border-2 border-dashed border-zinc-900 rounded-[2rem] text-zinc-700 font-bold uppercase text-[10px] tracking-widest">Cargando inventario...</div>
                 </div>
             </div>
@@ -168,29 +164,20 @@ func RenderCocinaPage(w http.ResponseWriter, orders []Order) {
     <main class="p-4 md:p-8 relative" hx-ext="ws" ws-connect="/ws">
         <div class="absolute top-40 left-1/4 -inset-10 bg-blue-500/5 blur-3xl rounded-full w-96 h-96 opacity-20"></div>
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 relative z-10">
-            <!-- Pendientes -->
             <div class="flex flex-col gap-5">
-                <div class="flex items-center justify-between px-4">
-                    <div class="flex items-center gap-3"><div class="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></div><h2 class="font-black text-zinc-400 text-[10px] uppercase tracking-[0.2em]">Pendientes</h2></div>
-                </div>
+                <div class="flex items-center gap-3 px-4"><div class="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></div><h2 class="font-black text-zinc-400 text-[10px] uppercase tracking-[0.2em]">Pendientes</h2></div>
                 <div id="pedidos-col" class="kanban-col flex flex-col gap-4 p-3 md:p-5 bg-zinc-900/20 backdrop-blur-md border border-zinc-800/50 rounded-[2.5rem] md:rounded-[3rem]">`))
 	for _, o := range orders { if o.Estado == "pendiente" { w.Write([]byte(RenderOrderCard(o.ID, o.Mesa, o.Plato, o.Estado))) } }
 	w.Write([]byte(`</div>
             </div>
-            <!-- En Proceso -->
             <div class="flex flex-col gap-5">
-                <div class="flex items-center justify-between px-4">
-                    <div class="flex items-center gap-3"><div class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div><h2 class="font-black text-zinc-400 text-[10px] uppercase tracking-[0.2em]">En Proceso</h2></div>
-                </div>
+                <div class="flex items-center gap-3 px-4"><div class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div><h2 class="font-black text-zinc-400 text-[10px] uppercase tracking-[0.2em]">En Proceso</h2></div>
                 <div id="proceso-col" class="kanban-col flex flex-col gap-4 p-3 md:p-5 bg-zinc-900/20 backdrop-blur-md border border-zinc-800/50 rounded-[2.5rem] md:rounded-[3rem]">`))
 	for _, o := range orders { if o.Estado == "proceso" { w.Write([]byte(RenderOrderCard(o.ID, o.Mesa, o.Plato, o.Estado))) } }
 	w.Write([]byte(`</div>
             </div>
-            <!-- Completado -->
             <div class="flex flex-col gap-5">
-                <div class="flex items-center justify-between px-4">
-                    <div class="flex items-center gap-3"><div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div><h2 class="font-black text-zinc-400 text-[10px] uppercase tracking-[0.2em]">Completado</h2></div>
-                </div>
+                <div class="flex items-center gap-3 px-4"><div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div><h2 class="font-black text-zinc-400 text-[10px] uppercase tracking-[0.2em]">Completado</h2></div>
                 <div id="completado-col" class="kanban-col flex flex-col gap-4 p-3 md:p-5 bg-zinc-900/20 backdrop-blur-md border border-zinc-800/50 rounded-[2.5rem] md:rounded-[3rem]">`))
 	for _, o := range orders { if o.Estado == "completado" { w.Write([]byte(RenderOrderCard(o.ID, o.Mesa, o.Plato, o.Estado))) } }
 	w.Write([]byte(`</div>
@@ -207,15 +194,42 @@ func RenderProductList(w io.Writer, products []Product) {
 		return
 	}
 	for _, p := range products {
-		fmt.Fprintf(w, `
-			<div class="p-5 md:p-6 bg-zinc-900/60 border border-zinc-800/50 rounded-3xl flex justify-between items-center animate-in fade-in slide-in-from-right-4 duration-300 group hover:border-zinc-700 transition-all">
-				<div class="flex flex-col gap-1">
-                    <h4 class="font-black text-white text-base md:text-lg group-hover:text-blue-400 transition-colors">%s</h4>
-                    <p class="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">%s</p>
-                </div>
-				<span class="font-black text-blue-500 text-lg md:text-xl tracking-tighter">%s</span>
-			</div>`, p.Name, p.Description, formatCLP(p.Price))
+		RenderProductItem(w, p)
 	}
+}
+
+func RenderProductItem(w io.Writer, p Product) {
+	fmt.Fprintf(w, `
+		<div id="product-%d" class="p-5 md:p-6 bg-zinc-900/60 border border-zinc-800/50 rounded-3xl flex justify-between items-center animate-in fade-in slide-in-from-right-4 duration-300 group hover:border-zinc-700 transition-all">
+			<div class="flex flex-col gap-1">
+				<h4 class="font-black text-white text-base md:text-lg group-hover:text-blue-400 transition-colors">%s</h4>
+				<p class="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">%s</p>
+				<span class="font-black text-blue-500 text-lg md:text-xl tracking-tighter">%s</span>
+			</div>
+			<div class="flex gap-2">
+				<button hx-get="/api/products/edit/%d" hx-target="#product-%d" hx-swap="outerHTML" class="p-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white rounded-xl transition-all">
+					<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+				</button>
+				<button hx-delete="/api/products/delete/%d" hx-target="#product-%d" hx-swap="outerHTML" hx-confirm="¿Seguro que quieres eliminar %s?" class="p-3 bg-zinc-800 hover:bg-red-900/50 text-zinc-400 hover:text-red-400 rounded-xl transition-all">
+					<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+				</button>
+			</div>
+		</div>`, p.ID, p.Name, p.Description, formatCLP(p.Price), p.ID, p.ID, p.ID, p.ID, p.Name)
+}
+
+func RenderProductEditForm(w io.Writer, p Product) {
+	fmt.Fprintf(w, `
+		<form id="product-%d" hx-post="/api/products/update/%d" hx-target="#product-%d" hx-swap="outerHTML" class="p-5 md:p-6 bg-zinc-800/40 border-2 border-blue-500/30 rounded-3xl flex flex-col gap-4 animate-in zoom-in duration-200">
+			<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+				<input type="text" name="name" value="%s" oninput="formatName(this)" class="bg-zinc-950/50 border border-zinc-700 p-3 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-bold" required>
+				<input type="text" name="price" value="%s" oninput="formatPrice(this)" class="bg-zinc-950/50 border border-zinc-700 p-3 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-sm font-bold" required>
+			</div>
+			<textarea name="description" oninput="formatSentence(this)" class="bg-zinc-950/50 border border-zinc-700 p-3 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-xs h-20" required>%s</textarea>
+			<div class="flex gap-2">
+				<button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-500 py-3 rounded-xl font-black uppercase text-[10px] tracking-widest transition-all">Guardar Cambios</button>
+				<button type="button" hx-get="/api/products" hx-target="#product-list" class="px-6 bg-zinc-800 hover:bg-zinc-700 py-3 rounded-xl font-black uppercase text-[10px] tracking-widest transition-all">Cancelar</button>
+			</div>
+		</form>`, p.ID, p.ID, p.ID, p.Name, formatCLP(p.Price), p.Description)
 }
 
 func RenderSearchSuggestions(w io.Writer, products []Product) {

@@ -90,9 +90,7 @@ func main() {
 	// --- RUTAS ---
 	http.HandleFunc("/", handleComandas)
 	http.HandleFunc("/cocina", func(w http.ResponseWriter, r *http.Request) {
-		if db == nil {
-			initDB()
-		}
+		if db == nil { initDB() }
 		if db == nil {
 			http.Error(w, "Base de datos no disponible", http.StatusServiceUnavailable)
 			return
@@ -123,7 +121,7 @@ func main() {
 		}()
 	})
 
-	// --- API PRODUCTOS ---
+	// --- API PRODUCTOS (CRUD) ---
 	http.HandleFunc("/api/products", func(w http.ResponseWriter, r *http.Request) {
 		if db == nil { initDB() }
 		if db == nil { return }
@@ -148,6 +146,41 @@ func main() {
 			}
 		}
 		RenderProductList(w, products)
+	})
+
+	http.HandleFunc("/api/products/delete/", func(w http.ResponseWriter, r *http.Request) {
+		if db == nil { return }
+		idStr := strings.TrimPrefix(r.URL.Path, "/api/products/delete/")
+		id, _ := strconv.Atoi(idStr)
+		_, _ = db.Exec(context.Background(), "DELETE FROM products WHERE id=$1", id)
+		w.WriteHeader(http.StatusOK)
+	})
+
+	http.HandleFunc("/api/products/edit/", func(w http.ResponseWriter, r *http.Request) {
+		if db == nil { return }
+		idStr := strings.TrimPrefix(r.URL.Path, "/api/products/edit/")
+		id, _ := strconv.Atoi(idStr)
+		var p Product
+		_ = db.QueryRow(context.Background(), "SELECT id, name, price, description FROM products WHERE id=$1", id).Scan(&p.ID, &p.Name, &p.Price, &p.Description)
+		RenderProductEditForm(w, p)
+	})
+
+	http.HandleFunc("/api/products/update/", func(w http.ResponseWriter, r *http.Request) {
+		if db == nil { return }
+		idStr := strings.TrimPrefix(r.URL.Path, "/api/products/update/")
+		id, _ := strconv.Atoi(idStr)
+		name := r.FormValue("name")
+		description := r.FormValue("description")
+		priceRaw := r.FormValue("price")
+		priceStr := ""
+		for _, char := range priceRaw {
+			if unicode.IsDigit(char) { priceStr += string(char) }
+		}
+		price, _ := strconv.Atoi(priceStr)
+		
+		var p Product
+		_ = db.QueryRow(context.Background(), "UPDATE products SET name=$1, price=$2, description=$3 WHERE id=$4 RETURNING id, name, price, description", name, price, description, id).Scan(&p.ID, &p.Name, &p.Price, &p.Description)
+		RenderProductItem(w, p)
 	})
 
 	http.HandleFunc("/api/products/search", func(w http.ResponseWriter, r *http.Request) {
@@ -181,16 +214,18 @@ func main() {
 			hub.broadcast <- []byte(html)
 			
 			w.Write([]byte(`
-				<form hx-post="/api/orders" hx-swap="none" hx-on::after-request="this.reset()" class="flex flex-col gap-5">
+				<form hx-post="/api/orders" hx-swap="none" hx-on::after-request="this.reset()" class="flex flex-col gap-6 bg-zinc-900/20 p-6 md:p-8 rounded-[2rem] border border-zinc-800/50 backdrop-blur-sm">
 					<div>
-						<label class="block text-[10px] text-zinc-500 uppercase font-black mb-2 ml-1">Ubicación / Mesa</label>
-						<input type="text" name="mesa" placeholder="Mesa 5" class="w-full bg-zinc-900/50 backdrop-blur-md border border-zinc-800 p-5 rounded-3xl focus:ring-2 focus:ring-blue-500 outline-none transition-all" required>
+						<label class="block text-[10px] text-zinc-500 uppercase font-black mb-3 ml-1 tracking-widest">Ubicación / Mesa</label>
+						<input type="text" name="mesa" placeholder="Ej: Mesa 12" class="w-full bg-zinc-950/50 border border-zinc-800 p-4 md:p-5 rounded-2xl md:rounded-3xl focus:ring-2 focus:ring-blue-500 outline-none transition-all text-xl font-bold" required>
 					</div>
 					<div>
-						<label class="block text-[10px] text-zinc-500 uppercase font-black mb-2 ml-1">Pedido Final</label>
-						<textarea id="order-text" name="plato" placeholder="Los productos aparecerán aquí..." class="w-full bg-zinc-900/50 backdrop-blur-md border border-zinc-800 p-5 rounded-3xl focus:ring-2 focus:ring-blue-500 outline-none h-40 transition-all font-medium" required></textarea>
+						<label class="block text-[10px] text-zinc-500 uppercase font-black mb-3 ml-1 tracking-widest">Pedido Detallado</label>
+						<textarea id="order-text" name="plato" placeholder="Los productos seleccionados aparecerán aquí..." class="w-full bg-zinc-950/50 border border-zinc-800 p-4 md:p-5 rounded-2xl md:rounded-3xl focus:ring-2 focus:ring-blue-500 outline-none h-48 transition-all font-medium text-lg leading-relaxed" required></textarea>
 					</div>
-					<button type="submit" class="bg-white text-black hover:bg-zinc-200 py-5 rounded-3xl font-black text-xl shadow-2xl active:scale-95 transition-all mt-4">ENVIAR A COCINA 🚀</button>
+					<button type="submit" class="group relative overflow-hidden bg-white text-black py-5 md:py-6 rounded-2xl md:rounded-3xl font-black text-xl shadow-2xl active:scale-95 transition-all mt-4">
+						<span class="relative z-10 flex items-center justify-center gap-3">ENVIAR A COCINA <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></svg></span>
+					</button>
 				</form>`))
 		}
 	})
