@@ -90,8 +90,15 @@ func main() {
 	// --- RUTAS ---
 	http.HandleFunc("/", handleComandas)
 	http.HandleFunc("/cocina", func(w http.ResponseWriter, r *http.Request) {
-		// Cargar pedidos actuales de la DB
-		rows, _ := db.Query(context.Background(), "SELECT id, plato, mesa, estado FROM orders ORDER BY id ASC")
+		if db == nil {
+			http.Error(w, "Base de datos no disponible", http.StatusServiceUnavailable)
+			return
+		}
+		rows, err := db.Query(context.Background(), "SELECT id, plato, mesa, estado FROM orders ORDER BY id ASC")
+		if err != nil {
+			http.Error(w, "Error al consultar la DB", http.StatusInternalServerError)
+			return
+		}
 		var orders []Order
 		for rows.Next() {
 			var o Order
@@ -115,6 +122,7 @@ func main() {
 
 	// --- API PRODUCTOS ---
 	http.HandleFunc("/api/products", func(w http.ResponseWriter, r *http.Request) {
+		if db == nil { return }
 		if r.Method == http.MethodPost {
 			name := r.FormValue("name")
 			description := r.FormValue("description")
@@ -128,35 +136,41 @@ func main() {
 		}
 		rows, _ := db.Query(context.Background(), "SELECT id, name, price, description FROM products ORDER BY id DESC")
 		var products []Product
-		for rows.Next() {
-			var p Product
-			rows.Scan(&p.ID, &p.Name, &p.Price, &p.Description)
-			products = append(products, p)
+		if rows != nil {
+			for rows.Next() {
+				var p Product
+				rows.Scan(&p.ID, &p.Name, &p.Price, &p.Description)
+				products = append(products, p)
+			}
 		}
 		RenderProductList(w, products)
 	})
 
 	http.HandleFunc("/api/products/search", func(w http.ResponseWriter, r *http.Request) {
+		if db == nil { return }
 		q := r.URL.Query().Get("q")
 		if q == "" { return }
 		rows, _ := db.Query(context.Background(), "SELECT name, price FROM products WHERE name ILIKE $1 LIMIT 5", "%"+q+"%")
 		var products []Product
-		for rows.Next() {
-			var p Product
-			rows.Scan(&p.Name, &p.Price)
-			products = append(products, p)
+		if rows != nil {
+			for rows.Next() {
+				var p Product
+				rows.Scan(&p.Name, &p.Price)
+				products = append(products, p)
+			}
 		}
 		RenderSearchSuggestions(w, products)
 	})
 
 	// --- API PEDIDOS ---
 	http.HandleFunc("/api/orders", func(w http.ResponseWriter, r *http.Request) {
+		if db == nil { return }
 		if r.Method == http.MethodPost {
 			plato, mesa := r.FormValue("plato"), r.FormValue("mesa")
 			var id int
-			_ = db.QueryRow(context.Background(), "INSERT INTO orders (plato, mesa, estado) VALUES ($1, $2, 'pendiente') RETURNING id", plato, mesa).Scan(&id)
+			err := db.QueryRow(context.Background(), "INSERT INTO orders (plato, mesa, estado) VALUES ($1, $2, 'pendiente') RETURNING id", plato, mesa).Scan(&id)
+			if err != nil { return }
 			
-			// Broadcast HTML a todos los cocineros
 			html := fmt.Sprintf(`<div id="pedidos-col" hx-swap-oob="beforeend">%s</div>`, RenderOrderCard(id, mesa, plato, "pendiente"))
 			hub.broadcast <- []byte(html)
 			
@@ -176,6 +190,7 @@ func main() {
 	})
 
 	http.HandleFunc("/api/orders/update/", func(w http.ResponseWriter, r *http.Request) {
+		if db == nil { return }
 		idStr := strings.TrimPrefix(r.URL.Path, "/api/orders/update/")
 		id, _ := strconv.Atoi(idStr)
 		newStatus := r.URL.Query().Get("status")
@@ -192,7 +207,6 @@ func main() {
 		targetCol := "proceso-col"
 		if newStatus == "completado" { targetCol = "completado-col" }
 		
-		// Borrar de columna actual y añadir a la nueva (OOB Swap)
 		html := fmt.Sprintf(`
 			<div id="order-%d" hx-swap-oob="delete"></div>
 			<div id="%s" hx-swap-oob="beforeend">%s</div>`, id, targetCol, RenderOrderCard(id, mesa, plato, newStatus))

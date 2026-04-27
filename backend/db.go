@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"os"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -26,17 +27,28 @@ type Order struct {
 // Global DB Connection
 var db *pgx.Conn
 
-// Inicializar Base de Datos
+// Inicializar Base de Datos con Reintento
 func initDB() {
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
 		dbURL = "postgres://postgres:postgres@db:5432/comandadb"
 	}
 
+	log.Printf("Intentando conectar a: %s\n", dbURL)
+
 	var err error
-	db, err = pgx.Connect(context.Background(), dbURL)
+	// Intentar conectar hasta 5 veces (por si la DB tarda en arrancar)
+	for i := 0; i < 5; i++ {
+		db, err = pgx.Connect(context.Background(), dbURL)
+		if err == nil {
+			break
+		}
+		log.Printf("Intento %d fallido, reintentando en 2s...\n", i+1)
+		time.Sleep(2 * time.Second)
+	}
+
 	if err != nil {
-		log.Printf("❌ Error conectando a la DB: %v\n", err)
+		log.Printf("❌ ERROR FINAL: No se pudo conectar a la DB: %v\n", err)
 		return
 	}
 
