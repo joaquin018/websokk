@@ -79,7 +79,6 @@ func (h *Hub) run() {
 var upgrader = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}
 
 func main() {
-	// Inicializar Base de Datos (desde db.go)
 	initDB()
 	if db != nil {
 		defer db.Close(context.Background())
@@ -90,7 +89,17 @@ func main() {
 
 	// --- RUTAS ---
 	http.HandleFunc("/", handleComandas)
-	http.HandleFunc("/cocina", handleCocina)
+	http.HandleFunc("/cocina", func(w http.ResponseWriter, r *http.Request) {
+		// Cargar pedidos actuales de la DB
+		rows, _ := db.Query(context.Background(), "SELECT id, plato, mesa, estado FROM orders ORDER BY id ASC")
+		var orders []Order
+		for rows.Next() {
+			var o Order
+			rows.Scan(&o.ID, &o.Plato, &o.Mesa, &o.Estado)
+			orders = append(orders, o)
+		}
+		RenderCocinaPage(w, orders)
+	})
 	http.HandleFunc("/config", handleConfig)
 
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
@@ -109,22 +118,14 @@ func main() {
 		if r.Method == http.MethodPost {
 			name := r.FormValue("name")
 			description := r.FormValue("description")
-			
-			// Limpiar el precio: de "$1.250" a "1250"
 			priceRaw := r.FormValue("price")
 			priceStr := ""
 			for _, char := range priceRaw {
-				if unicode.IsDigit(char) {
-					priceStr += string(char)
-				}
+				if unicode.IsDigit(char) { priceStr += string(char) }
 			}
 			price, _ := strconv.Atoi(priceStr)
-
-			_, _ = db.Exec(context.Background(), 
-				"INSERT INTO products (name, price, description) VALUES ($1, $2, $3)", 
-				name, price, description)
+			_, _ = db.Exec(context.Background(), "INSERT INTO products (name, price, description) VALUES ($1, $2, $3)", name, price, description)
 		}
-
 		rows, _ := db.Query(context.Background(), "SELECT id, name, price, description FROM products ORDER BY id DESC")
 		var products []Product
 		for rows.Next() {
@@ -135,6 +136,19 @@ func main() {
 		RenderProductList(w, products)
 	})
 
+	http.HandleFunc("/api/products/search", func(w http.ResponseWriter, r *http.Request) {
+		q := r.URL.Query().Get("q")
+		if q == "" { return }
+		rows, _ := db.Query(context.Background(), "SELECT name, price FROM products WHERE name ILIKE $1 LIMIT 5", "%"+q+"%")
+		var products []Product
+		for rows.Next() {
+			var p Product
+			rows.Scan(&p.Name, &p.Price)
+			products = append(products, p)
+		}
+		RenderSearchSuggestions(w, products)
+	})
+
 	// --- API PEDIDOS ---
 	http.HandleFunc("/api/orders", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
@@ -142,14 +156,21 @@ func main() {
 			var id int
 			_ = db.QueryRow(context.Background(), "INSERT INTO orders (plato, mesa, estado) VALUES ($1, $2, 'pendiente') RETURNING id", plato, mesa).Scan(&id)
 			
+			// Broadcast HTML a todos los cocineros
 			html := fmt.Sprintf(`<div id="pedidos-col" hx-swap-oob="beforeend">%s</div>`, RenderOrderCard(id, mesa, plato, "pendiente"))
 			hub.broadcast <- []byte(html)
 			
 			w.Write([]byte(`
-				<form hx-post="/api/orders" hx-swap="none" hx-on::after-request="this.reset()" class="flex flex-col gap-4">
-					<input type="text" name="mesa" placeholder="Mesa" class="bg-zinc-900/50 border border-zinc-800 p-4 rounded-2xl outline-none" required>
-					<textarea name="plato" placeholder="Pedido" class="bg-zinc-900/50 border border-zinc-800 p-4 rounded-2xl outline-none h-32" required></textarea>
-					<button type="submit" class="bg-white text-black py-4 rounded-2xl font-bold mt-2">Enviar 🚀</button>
+				<form hx-post="/api/orders" hx-swap="none" hx-on::after-request="this.reset()" class="flex flex-col gap-5">
+					<div>
+						<label class="block text-[10px] text-zinc-500 uppercase font-black mb-2 ml-1">Ubicación / Mesa</label>
+						<input type="text" name="mesa" placeholder="Mesa 5" class="w-full bg-zinc-900/50 backdrop-blur-md border border-zinc-800 p-5 rounded-3xl focus:ring-2 focus:ring-blue-500 outline-none transition-all" required>
+					</div>
+					<div>
+						<label class="block text-[10px] text-zinc-500 uppercase font-black mb-2 ml-1">Pedido Final</label>
+						<textarea id="order-text" name="plato" placeholder="Los productos aparecerán aquí..." class="w-full bg-zinc-900/50 backdrop-blur-md border border-zinc-800 p-5 rounded-3xl focus:ring-2 focus:ring-blue-500 outline-none h-40 transition-all font-medium" required></textarea>
+					</div>
+					<button type="submit" class="bg-white text-black hover:bg-zinc-200 py-5 rounded-3xl font-black text-xl shadow-2xl active:scale-95 transition-all mt-4">ENVIAR A COCINA 🚀</button>
 				</form>`))
 		}
 	})
@@ -171,7 +192,11 @@ func main() {
 		targetCol := "proceso-col"
 		if newStatus == "completado" { targetCol = "completado-col" }
 		
-		html := fmt.Sprintf(`<div id="order-%d" hx-swap-oob="delete"></div><div id="%s" hx-swap-oob="beforeend">%s</div>`, id, targetCol, RenderOrderCard(id, mesa, plato, newStatus))
+		// Borrar de columna actual y añadir a la nueva (OOB Swap)
+		html := fmt.Sprintf(`
+			<div id="order-%d" hx-swap-oob="delete"></div>
+			<div id="%s" hx-swap-oob="beforeend">%s</div>`, id, targetCol, RenderOrderCard(id, mesa, plato, newStatus))
+		
 		hub.broadcast <- []byte(html)
 	})
 

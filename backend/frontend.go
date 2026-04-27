@@ -8,7 +8,7 @@ import (
 	"strconv"
 )
 
-// Helper: Formato Moneda CLP ($1.520)
+// Helper: Formato Moneda CLP
 func formatCLP(amount int) string {
 	s := strconv.Itoa(amount)
 	n := len(s)
@@ -33,19 +33,22 @@ const layoutHeader = `
     <script src="https://unpkg.com/htmx.org/dist/ext/ws.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        // Helpers para el formateo en tiempo real
-        function formatName(el) {
-            el.value = el.value.toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
-        }
-        function formatSentence(el) {
-            if (el.value.length > 0) {
-                el.value = el.value.charAt(0).toUpperCase() + el.value.slice(1).toLowerCase();
-            }
-        }
+        function formatName(el) { el.value = el.value.toLowerCase().replace(/\b\w/g, l => l.toUpperCase()); }
+        function formatSentence(el) { if (el.value.length > 0) el.value = el.value.charAt(0).toUpperCase() + el.value.slice(1).toLowerCase(); }
         function formatPrice(el) {
             let val = el.value.replace(/\D/g, "");
             if (val === "") { el.value = ""; return; }
             el.value = "$" + new Intl.NumberFormat("es-CL").format(val);
+        }
+        function addProductToOrder(name) {
+            const textarea = document.getElementById('order-text');
+            if (textarea.value.length > 0) textarea.value += "\n";
+            textarea.value += name;
+            textarea.classList.add('ring-2', 'ring-blue-500');
+            setTimeout(() => textarea.classList.remove('ring-2', 'ring-blue-500'), 500);
+            document.getElementById('search-results').innerHTML = '';
+            document.getElementById('product-search').value = '';
+            textarea.focus();
         }
     </script>
     <style>
@@ -80,41 +83,22 @@ var comandasTmpl = template.Must(template.New("comandas").Parse(layoutHeader + `
         <div class="relative z-10 mt-10">
             <h2 class="text-4xl font-bold mb-2 tracking-tighter">Nueva Comanda</h2>
             <p class="text-zinc-500 mb-8 text-sm uppercase font-bold tracking-widest">Panel de Camareros</p>
+            <div class="mb-6 relative">
+                <label class="block text-[10px] text-blue-400 uppercase font-black mb-2 ml-1">Buscar Producto</label>
+                <input type="text" id="product-search" name="q" hx-get="/api/products/search" hx-trigger="keyup changed delay:300ms" hx-target="#search-results" placeholder="Escribe para buscar..." class="w-full bg-blue-500/5 border border-blue-500/20 p-4 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all placeholder:text-zinc-700">
+                <div id="search-results" class="absolute w-full mt-2 z-50 flex flex-col gap-1"></div>
+            </div>
             <form hx-post="/api/orders" hx-swap="none" hx-on::after-request="this.reset()" class="flex flex-col gap-5">
                 <div>
                     <label class="block text-[10px] text-zinc-500 uppercase font-black mb-2 ml-1">Ubicación / Mesa</label>
                     <input type="text" name="mesa" placeholder="Mesa 5" class="w-full bg-zinc-900/50 backdrop-blur-md border border-zinc-800 p-5 rounded-3xl focus:ring-2 focus:ring-blue-500 outline-none transition-all" required>
                 </div>
                 <div>
-                    <label class="block text-[10px] text-zinc-500 uppercase font-black mb-2 ml-1">Qué van a pedir</label>
-                    <textarea name="plato" placeholder="Anota aquí..." class="w-full bg-zinc-900/50 backdrop-blur-md border border-zinc-800 p-5 rounded-3xl focus:ring-2 focus:ring-blue-500 outline-none h-40 transition-all" required></textarea>
+                    <label class="block text-[10px] text-zinc-500 uppercase font-black mb-2 ml-1">Pedido Final</label>
+                    <textarea id="order-text" name="plato" placeholder="Los productos aparecerán aquí..." class="w-full bg-zinc-900/50 backdrop-blur-md border border-zinc-800 p-5 rounded-3xl focus:ring-2 focus:ring-blue-500 outline-none h-40 transition-all font-medium" required></textarea>
                 </div>
-                <button type="submit" class="bg-white text-black hover:bg-zinc-200 py-5 rounded-3xl font-black text-xl shadow-2xl active:scale-95 transition-all mt-4">
-                    ENVIAR A COCINA 🚀
-                </button>
+                <button type="submit" class="bg-white text-black hover:bg-zinc-200 py-5 rounded-3xl font-black text-xl shadow-2xl active:scale-95 transition-all mt-4">ENVIAR A COCINA 🚀</button>
             </form>
-        </div>
-    </main>
-` + layoutFooter))
-
-// --- VISTA COCINA (TRELLO) ---
-var cocinaTmpl = template.Must(template.New("cocina").Parse(layoutHeader + `
-    <main class="p-6 relative" hx-ext="ws" ws-connect="/ws">
-        <div class="absolute top-40 left-1/4 -inset-10 bg-blue-500/5 blur-3xl rounded-full w-96 h-96 opacity-50"></div>
-        <div class="absolute bottom-40 right-1/4 -inset-10 bg-purple-500/5 blur-3xl rounded-full w-96 h-96 opacity-50"></div>
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 relative z-10">
-            <div class="flex flex-col gap-4">
-                <div class="flex items-center gap-3 mb-2"><div class="w-3 h-3 rounded-full bg-yellow-500 animate-pulse"></div><h2 class="font-black text-zinc-400 text-xs uppercase tracking-[0.2em]">Pendientes</h2></div>
-                <div id="pedidos-col" class="kanban-col flex flex-col gap-4 p-4 bg-zinc-900/20 backdrop-blur-sm border border-zinc-800/50 rounded-[2rem]"></div>
-            </div>
-            <div class="flex flex-col gap-4">
-                <div class="flex items-center gap-3 mb-2"><div class="w-3 h-3 rounded-full bg-blue-500 animate-pulse"></div><h2 class="font-black text-zinc-400 text-xs uppercase tracking-[0.2em]">En Cocina</h2></div>
-                <div id="proceso-col" class="kanban-col flex flex-col gap-4 p-4 bg-zinc-900/20 backdrop-blur-sm border border-zinc-800/50 rounded-[2rem]"></div>
-            </div>
-            <div class="flex flex-col gap-4">
-                <div class="flex items-center gap-3 mb-2"><div class="w-3 h-3 rounded-full bg-green-500 animate-pulse"></div><h2 class="font-black text-zinc-400 text-xs uppercase tracking-[0.2em]">Listos</h2></div>
-                <div id="completado-col" class="kanban-col flex flex-col gap-4 p-4 bg-zinc-900/20 backdrop-blur-sm border border-zinc-800/50 rounded-[2rem]"></div>
-            </div>
         </div>
     </main>
 ` + layoutFooter))
@@ -147,8 +131,38 @@ var configTmpl = template.Must(template.New("config").Parse(layoutHeader + `
 ` + layoutFooter))
 
 func handleComandas(w http.ResponseWriter, r *http.Request) { comandasTmpl.Execute(w, nil) }
-func handleCocina(w http.ResponseWriter, r *http.Request) { cocinaTmpl.Execute(w, nil) }
 func handleConfig(w http.ResponseWriter, r *http.Request) { configTmpl.Execute(w, nil) }
+
+func RenderCocinaPage(w http.ResponseWriter, orders []Order) {
+	w.Write([]byte(layoutHeader))
+	w.Write([]byte(`
+    <main class="p-6 relative" hx-ext="ws" ws-connect="/ws">
+        <div class="absolute top-40 left-1/4 -inset-10 bg-blue-500/5 blur-3xl rounded-full w-96 h-96 opacity-50"></div>
+        <div class="absolute bottom-40 right-1/4 -inset-10 bg-purple-500/5 blur-3xl rounded-full w-96 h-96 opacity-50"></div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 relative z-10">
+            <div class="flex flex-col gap-4">
+                <div class="flex items-center gap-3 mb-2"><div class="w-3 h-3 rounded-full bg-yellow-500 animate-pulse"></div><h2 class="font-black text-zinc-400 text-xs uppercase tracking-[0.2em]">Pendientes</h2></div>
+                <div id="pedidos-col" class="kanban-col flex flex-col gap-4 p-4 bg-zinc-900/20 backdrop-blur-sm border border-zinc-800/50 rounded-[2rem]">`))
+	for _, o := range orders { if o.Estado == "pendiente" { w.Write([]byte(RenderOrderCard(o.ID, o.Mesa, o.Plato, o.Estado))) } }
+	w.Write([]byte(`</div>
+            </div>
+            <div class="flex flex-col gap-4">
+                <div class="flex items-center gap-3 mb-2"><div class="w-3 h-3 rounded-full bg-blue-500 animate-pulse"></div><h2 class="font-black text-zinc-400 text-xs uppercase tracking-[0.2em]">En Proceso</h2></div>
+                <div id="proceso-col" class="kanban-col flex flex-col gap-4 p-4 bg-zinc-900/20 backdrop-blur-sm border border-zinc-800/50 rounded-[2rem]">`))
+	for _, o := range orders { if o.Estado == "proceso" { w.Write([]byte(RenderOrderCard(o.ID, o.Mesa, o.Plato, o.Estado))) } }
+	w.Write([]byte(`</div>
+            </div>
+            <div class="flex flex-col gap-4">
+                <div class="flex items-center gap-3 mb-2"><div class="w-3 h-3 rounded-full bg-green-500 animate-pulse"></div><h2 class="font-black text-zinc-400 text-xs uppercase tracking-[0.2em]">Completado</h2></div>
+                <div id="completado-col" class="kanban-col flex flex-col gap-4 p-4 bg-zinc-900/20 backdrop-blur-sm border border-zinc-800/50 rounded-[2rem]">`))
+	for _, o := range orders { if o.Estado == "completado" { w.Write([]byte(RenderOrderCard(o.ID, o.Mesa, o.Plato, o.Estado))) } }
+	w.Write([]byte(`</div>
+            </div>
+        </div>
+    </main>
+`))
+	w.Write([]byte(layoutFooter))
+}
 
 func RenderProductList(w io.Writer, products []Product) {
 	if len(products) == 0 {
@@ -161,6 +175,22 @@ func RenderProductList(w io.Writer, products []Product) {
 				<div><h4 class="font-bold text-white">%s</h4><p class="text-[10px] text-zinc-500">%s</p></div>
 				<span class="font-mono text-blue-400 font-bold text-sm">%s</span>
 			</div>`, p.Name, p.Description, formatCLP(p.Price))
+	}
+}
+
+func RenderSearchSuggestions(w io.Writer, products []Product) {
+	if len(products) == 0 {
+		w.Write([]byte(`<div class="p-4 bg-zinc-900 border border-zinc-800 rounded-2xl text-zinc-500 text-xs">No se encontraron productos</div>`))
+		return
+	}
+	for _, p := range products {
+		fmt.Fprintf(w, `
+			<button type="button" onclick="addProductToOrder('%s')" class="w-full p-4 bg-zinc-900 hover:bg-blue-600 border border-zinc-800 text-left rounded-2xl transition-all group animate-in fade-in slide-in-from-top-2 duration-200">
+				<div class="flex justify-between items-center">
+					<span class="font-bold text-white group-hover:text-white">%s</span>
+					<span class="text-xs font-mono text-blue-400 group-hover:text-blue-100">%s</span>
+				</div>
+			</button>`, p.Name, p.Name, formatCLP(p.Price))
 	}
 }
 
@@ -177,7 +207,10 @@ func RenderOrderCard(id int, mesa, plato, estado string) string {
 				<span class="text-[10px] font-mono text-zinc-500">ORD-%d</span>
 				<span class="px-2.5 py-1 bg-white text-black text-[10px] font-black uppercase rounded-lg">Mesa %s</span>
 			</div>
-			<h3 class="font-bold text-lg leading-tight mb-4">%s</h3>
+			<div class="mb-4">
+				<p class="text-zinc-400 text-[10px] uppercase font-bold mb-1">Pedido:</p>
+				<h3 class="font-bold text-lg leading-tight whitespace-pre-wrap">%s</h3>
+			</div>
 			<div class="flex gap-2">
 				<button hx-post="/api/orders/update/%d?status=%s" class="flex-1 py-3 text-[10px] font-black uppercase tracking-widest text-white %s rounded-2xl transition-all active:scale-95">%s</button>
 			</div>
