@@ -68,8 +68,8 @@ func initDB() {
 		);
 	`)
 	if err != nil {
-		log.Printf("❌ Error creando tablas: %v\n", err)
+		log.Printf("❌ CRÍTICO: Error creando tablas: %v\n", err)
 	} else {
-		log.Println("✅ Base de datos conectada y tablas listas")
+		log.Println("✅ Base de datos conectada y tablas verificadas/listas")
 	}
 }

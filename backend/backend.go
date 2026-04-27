@@ -99,7 +99,7 @@ func main() {
 		}
 		rows, err := db.Query(context.Background(), "SELECT id, plato, mesa, estado FROM orders ORDER BY id ASC")
 		if err != nil {
-			http.Error(w, "Error al consultar la DB", http.StatusInternalServerError)
+			http.Error(w, fmt.Sprintf("Error al consultar la DB: %v", err), http.StatusInternalServerError)
 			return
 		}
 		var orders []Order
