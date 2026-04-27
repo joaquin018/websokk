@@ -6,7 +6,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: comandadb
     volumes:
-      - pgdata_final:/var/lib/postgresql/data
+      - pgdata_18:/var/lib/postgresql
     networks:
       - comandas_net
 
@@ -26,4 +26,4 @@ networks:
     driver: bridge
 
 volumes:
-  pgdata_final:
+  pgdata_18:
