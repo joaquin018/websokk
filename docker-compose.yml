@@ -1,12 +1,12 @@
 services:
   pgdb:
-    image: postgres:18.3
+    image: postgres:17-alpine
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: comandadb
     volumes:
-      - pgdata_new:/var/lib/postgresql/data
+      - pgdata_final:/var/lib/postgresql/data
     networks:
       - comandas_net
 
@@ -26,4 +26,4 @@ networks:
     driver: bridge
 
 volumes:
-  pgdata_new:
+  pgdata_final:
