@@ -1,4 +1,4 @@
-package frontend
+package main
 
 import (
 	"html/template"
@@ -27,8 +27,8 @@ var indexTmpl = template.Must(template.New("index").Parse(`
         </h1>
         
         <p class="max-w-md text-zinc-400 text-lg sm:text-xl">
-            Lógica en <span class="text-blue-400">/backend</span>, Interfaz en <span class="text-blue-400">/frontend</span>. 
-            Separación física total.
+            Arquitectura **SSR** pura. Todo en <span class="text-blue-400">/backend</span>. 
+            Simple, directo y extremadamente rápido.
         </p>
 
         <div id="status" class="mt-4 p-4 border border-zinc-800 rounded-xl min-w-[200px]">
@@ -51,7 +51,6 @@ var indexTmpl = template.Must(template.New("index").Parse(`
 </html>
 `))
 
-// HandleIndex es pública ahora (mayúscula)
-func HandleIndex(w http.ResponseWriter, r *http.Request) {
+func handleIndex(w http.ResponseWriter, r *http.Request) {
 	indexTmpl.Execute(w, nil)
 }

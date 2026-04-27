@@ -7,8 +7,6 @@ import (
 	"net/http"
 	"os"
 
-	"websokk/frontend"
-
 	"github.com/jackc/pgx/v5"
 )
 
@@ -28,8 +26,8 @@ func main() {
 	}
 
 	// Routes
-	// Ahora usamos el paquete 'frontend' y su función pública 'HandleIndex'
-	http.HandleFunc("/", frontend.HandleIndex)
+	// 'handleIndex' vuelve a estar disponible localmente
+	http.HandleFunc("/", handleIndex)
 
 	// API Endpoints
 	http.HandleFunc("/api/test", handleAPITest)
