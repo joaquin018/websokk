@@ -107,9 +107,18 @@ func main() {
 	// --- API PRODUCTOS ---
 	http.HandleFunc("/api/products", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
-			name := toTitleCase(r.FormValue("name"))
-			description := toSentenceCase(r.FormValue("description"))
-			price, _ := strconv.Atoi(r.FormValue("price"))
+			name := r.FormValue("name")
+			description := r.FormValue("description")
+			
+			// Limpiar el precio: de "$1.250" a "1250"
+			priceRaw := r.FormValue("price")
+			priceStr := ""
+			for _, char := range priceRaw {
+				if unicode.IsDigit(char) {
+					priceStr += string(char)
+				}
+			}
+			price, _ := strconv.Atoi(priceStr)
 
 			_, _ = db.Exec(context.Background(), 
 				"INSERT INTO products (name, price, description) VALUES ($1, $2, $3)", 
