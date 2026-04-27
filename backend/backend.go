@@ -91,6 +91,9 @@ func main() {
 	http.HandleFunc("/", handleComandas)
 	http.HandleFunc("/cocina", func(w http.ResponseWriter, r *http.Request) {
 		if db == nil {
+			initDB()
+		}
+		if db == nil {
 			http.Error(w, "Base de datos no disponible", http.StatusServiceUnavailable)
 			return
 		}
@@ -122,6 +125,7 @@ func main() {
 
 	// --- API PRODUCTOS ---
 	http.HandleFunc("/api/products", func(w http.ResponseWriter, r *http.Request) {
+		if db == nil { initDB() }
 		if db == nil { return }
 		if r.Method == http.MethodPost {
 			name := r.FormValue("name")
@@ -147,6 +151,7 @@ func main() {
 	})
 
 	http.HandleFunc("/api/products/search", func(w http.ResponseWriter, r *http.Request) {
+		if db == nil { initDB() }
 		if db == nil { return }
 		q := r.URL.Query().Get("q")
 		if q == "" { return }
@@ -164,6 +169,7 @@ func main() {
 
 	// --- API PEDIDOS ---
 	http.HandleFunc("/api/orders", func(w http.ResponseWriter, r *http.Request) {
+		if db == nil { initDB() }
 		if db == nil { return }
 		if r.Method == http.MethodPost {
 			plato, mesa := r.FormValue("plato"), r.FormValue("mesa")
@@ -190,6 +196,7 @@ func main() {
 	})
 
 	http.HandleFunc("/api/orders/update/", func(w http.ResponseWriter, r *http.Request) {
+		if db == nil { initDB() }
 		if db == nil { return }
 		idStr := strings.TrimPrefix(r.URL.Path, "/api/orders/update/")
 		id, _ := strconv.Atoi(idStr)
