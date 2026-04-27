@@ -24,6 +24,11 @@ type Order struct {
 	Estado string
 }
 
+type Table struct {
+	ID   int
+	Name string
+}
+
 // Global DB Connection
 var db *pgx.Conn
 
@@ -65,6 +70,10 @@ func initDB() {
 			name TEXT NOT NULL, 
 			price INTEGER NOT NULL, 
 			description TEXT
+		);
+		CREATE TABLE IF NOT EXISTS tables (
+			id SERIAL PRIMARY KEY,
+			name TEXT NOT NULL UNIQUE
 		);
 	`)
 	if err != nil {

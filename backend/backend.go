@@ -88,7 +88,19 @@ func main() {
 	go hub.run()
 
 	// --- RUTAS ---
-	http.HandleFunc("/", handleComandas)
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if db == nil { initDB() }
+		rows, _ := db.Query(context.Background(), "SELECT id, name FROM tables ORDER BY name ASC")
+		var tables []Table
+		if rows != nil {
+			for rows.Next() {
+				var t Table
+				rows.Scan(&t.ID, &t.Name)
+				tables = append(tables, t)
+			}
+		}
+		RenderComandasPage(w, tables)
+	})
 	http.HandleFunc("/cocina", func(w http.ResponseWriter, r *http.Request) {
 		if db == nil { initDB() }
 		if db == nil {
@@ -108,7 +120,19 @@ func main() {
 		}
 		RenderCocinaPage(w, orders)
 	})
-	http.HandleFunc("/config", handleConfig)
+	http.HandleFunc("/config", func(w http.ResponseWriter, r *http.Request) {
+		if db == nil { initDB() }
+		rows, _ := db.Query(context.Background(), "SELECT id, name FROM tables ORDER BY name ASC")
+		var tables []Table
+		if rows != nil {
+			for rows.Next() {
+				var t Table
+				rows.Scan(&t.ID, &t.Name)
+				tables = append(tables, t)
+			}
+		}
+		RenderConfigPage(w, tables)
+	})
 
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
 		c, _ := upgrader.Upgrade(w, r, nil)
@@ -198,6 +222,40 @@ func main() {
 			}
 		}
 		RenderSearchSuggestions(w, products)
+	})
+
+	// --- API TABLES (GENERACIÓN AUTOMÁTICA) ---
+	http.HandleFunc("/api/tables", func(w http.ResponseWriter, r *http.Request) {
+		if db == nil { initDB() }
+		if r.Method == http.MethodPost {
+			countStr := r.FormValue("count")
+			count, _ := strconv.Atoi(countStr)
+			
+			// Borramos las anteriores y creamos las nuevas
+			_, _ = db.Exec(context.Background(), "DELETE FROM tables")
+			for i := 1; i <= count; i++ {
+				name := fmt.Sprintf("Mesa %d", i)
+				_, _ = db.Exec(context.Background(), "INSERT INTO tables (name) VALUES ($1)", name)
+			}
+		}
+		rows, _ := db.Query(context.Background(), "SELECT id, name FROM tables ORDER BY id ASC")
+		var tables []Table
+		if rows != nil {
+			for rows.Next() {
+				var t Table
+				rows.Scan(&t.ID, &t.Name)
+				tables = append(tables, t)
+			}
+		}
+		RenderTableList(w, tables)
+	})
+
+	http.HandleFunc("/api/tables/delete/", func(w http.ResponseWriter, r *http.Request) {
+		if db == nil { return }
+		idStr := strings.TrimPrefix(r.URL.Path, "/api/tables/delete/")
+		id, _ := strconv.Atoi(idStr)
+		_, _ = db.Exec(context.Background(), "DELETE FROM tables WHERE id=$1", id)
+		w.WriteHeader(http.StatusOK)
 	})
 
 	// --- API PEDIDOS ---
