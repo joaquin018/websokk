@@ -33,10 +33,23 @@ const layoutHeader = `
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Comandas App</title>
+    <meta name="view-transition" content="same-origin">
     <script src="https://unpkg.com/htmx.org@1.9.11"></script>
     <script src="https://unpkg.com/htmx.org/dist/ext/ws.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://instant.page/5.2.0" type="module" integrity="sha384-jnZyxPjiipSbm6WFEJrqQUqzHKyeWMLzQoUf69GON5m929OdzP64VGupxzGTzG++"></script>
     <script>
+        // Registro de Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js');
+            });
+        }
+        // Habilitar transiciones globales en HTMX
+        document.addEventListener("DOMContentLoaded", () => {
+            htmx.config.globalViewTransitions = true;
+        });
+
         function formatName(el) { el.value = el.value.toLowerCase().replace(/\b\w/g, l => l.toUpperCase()); }
         function formatSentence(el) { if (el.value.length > 0) el.value = el.value.charAt(0).toUpperCase() + el.value.slice(1).toLowerCase(); }
         function formatPrice(el) {
@@ -82,6 +95,12 @@ const layoutHeader = `
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
+
+        /* Animación suave entre páginas */
+        ::view-transition-old(root),
+        ::view-transition-new(root) {
+            animation-duration: 0.3s;
+        }
     </style>
 </head>
 <body class="bg-zinc-950 text-zinc-50 antialiased overflow-x-hidden">
@@ -241,9 +260,14 @@ func RenderConfigPage(w http.ResponseWriter, tables []Table) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Configuraciones</title>
+    <meta name="view-transition" content="same-origin">
     <script src="https://unpkg.com/htmx.org@1.9.11"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://instant.page/5.2.0" type="module" integrity="sha384-jnZyxPjiipSbm6WFEJrqQUqzHKyeWMLzQoUf69GON5m929OdzP64VGupxzGTzG++"></script>
     <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => { navigator.serviceWorker.register('/sw.js'); });
+        }
         function formatName(el) { el.value = el.value.toLowerCase().replace(/\b\w/g, l => l.toUpperCase()); }
         function formatSentence(el) { if (el.value.length > 0) el.value = el.value.charAt(0).toUpperCase() + el.value.slice(1).toLowerCase(); }
         function formatPrice(el) {

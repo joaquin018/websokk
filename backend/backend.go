@@ -86,6 +86,33 @@ func main() {
 
 	hub := newHub()
 	go hub.run()
+	
+	// --- SERVICE WORKER ---
+	http.HandleFunc("/sw.js", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/javascript")
+		w.Write([]byte(`
+			const CACHE_NAME = 'comandas-v1';
+			const ASSETS = [
+				'/',
+				'/cocina',
+				'/config',
+				'https://unpkg.com/htmx.org@1.9.11',
+				'https://cdn.tailwindcss.com'
+			];
+
+			self.addEventListener('install', e => {
+				e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(ASSETS)));
+			});
+
+			self.addEventListener('fetch', e => {
+				e.respondWith(
+					caches.match(e.request).then(res => {
+						return res || fetch(e.request);
+					})
+				);
+			});
+		`))
+	})
 
 	// --- RUTAS ---
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
