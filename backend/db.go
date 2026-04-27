@@ -37,13 +37,13 @@ func initDB() {
 	log.Printf("Intentando conectar a: %s\n", dbURL)
 
 	var err error
-	// Intentar conectar hasta 5 veces (por si la DB tarda en arrancar)
-	for i := 0; i < 5; i++ {
+	// Intentar conectar hasta 15 veces (30 segundos total)
+	for i := 0; i < 15; i++ {
 		db, err = pgx.Connect(context.Background(), dbURL)
 		if err == nil {
 			break
 		}
-		log.Printf("Intento %d fallido, reintentando en 2s...\n", i+1)
+		log.Printf("Intento %d fallido (DB no lista), reintentando en 2s... Error: %v\n", i+1, err)
 		time.Sleep(2 * time.Second)
 	}
 
