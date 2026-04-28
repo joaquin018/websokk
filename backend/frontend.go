@@ -403,19 +403,15 @@ func RenderProductItem(p Product) string {
 				<h4 class="font-black text-white text-sm md:text-base uppercase tracking-tight">%s</h4>
 				<span class="font-bold text-blue-500 text-sm md:text-base">%s</span>
 			</div>
-			<div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-				<button hx-get="/api/products/edit/%d" hx-target="#product-%d" hx-swap="outerHTML" class="p-3 text-zinc-500 hover:text-white transition-all">
+			<div class="flex items-center gap-2">
+				<button hx-get="/api/products/edit/%d" hx-target="#product-%d" hx-swap="outerHTML" class="p-3 text-zinc-500 hover:text-white transition-all opacity-0 group-hover:opacity-100">
 					<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
 				</button>
-				<button hx-delete="/api/products/delete/%d" hx-target="#product-%d" hx-swap="outerHTML" hx-confirm="¿Eliminar %s?" class="p-3 text-zinc-500 hover:text-red-400 transition-all">
-					<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
-				</button>
+                <button hx-delete="/api/products/delete/%d" hx-target="#product-%d" hx-swap="outerHTML" hx-confirm="¿Eliminar %s?" class="p-4 bg-zinc-800/50 text-zinc-500 hover:text-red-400 rounded-2xl transition-all shadow-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                </button>
 			</div>
-            <!-- Botón de papelera siempre visible según la imagen, pero ajustado a la derecha -->
-            <button hx-delete="/api/products/delete/%d" hx-target="#product-%d" hx-swap="outerHTML" hx-confirm="¿Eliminar %s?" class="p-3 bg-zinc-800/50 text-zinc-500 hover:text-red-400 rounded-xl transition-all block md:hidden group-hover:block">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
-            </button>
-		</div>`, p.ID, p.Name, formatCLP(p.Price), p.ID, p.ID, p.ID, p.ID, p.Name, p.ID, p.ID, p.Name)
+		</div>`, p.ID, p.Name, formatCLP(p.Price), p.ID, p.ID, p.ID, p.ID, p.Name)
 }
 
 func RenderProductEditForm(w io.Writer, p Product) {
