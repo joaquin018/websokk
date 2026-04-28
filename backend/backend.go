@@ -117,6 +117,7 @@ func main() {
 	// --- RUTAS ---
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if db == nil { initDB() }
+		fullPage := r.Header.Get("HX-Request") == ""
 		rows, _ := db.Query(context.Background(), "SELECT id, name FROM tables ORDER BY name ASC")
 		var tables []Table
 		if rows != nil {
@@ -127,10 +128,11 @@ func main() {
 				tables = append(tables, t)
 			}
 		}
-		RenderComandasPage(w, tables)
+		RenderComandasPage(w, tables, fullPage)
 	})
 	http.HandleFunc("/cocina", func(w http.ResponseWriter, r *http.Request) {
 		if db == nil { initDB() }
+		fullPage := r.Header.Get("HX-Request") == ""
 		if db == nil {
 			http.Error(w, "Base de datos no disponible", http.StatusServiceUnavailable)
 			return
@@ -147,10 +149,11 @@ func main() {
 			rows.Scan(&o.ID, &o.Plato, &o.Mesa, &o.Estado)
 			orders = append(orders, o)
 		}
-		RenderCocinaPage(w, orders)
+		RenderCocinaPage(w, orders, fullPage)
 	})
 	http.HandleFunc("/config", func(w http.ResponseWriter, r *http.Request) {
 		if db == nil { initDB() }
+		fullPage := r.Header.Get("HX-Request") == ""
 		rows, _ := db.Query(context.Background(), "SELECT id, name FROM tables ORDER BY name ASC")
 		var tables []Table
 		if rows != nil {
@@ -161,7 +164,7 @@ func main() {
 				tables = append(tables, t)
 			}
 		}
-		RenderConfigPage(w, tables)
+		RenderConfigPage(w, tables, fullPage)
 	})
 
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {

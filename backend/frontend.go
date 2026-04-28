@@ -120,13 +120,16 @@ const layoutFooter = `
 // -------------------------------------
 // -------------| Header
 // -------------------------------------
-func RenderHeader(title string) string {
+func RenderHeader(title string, oob bool) string {
+	if oob {
+		return fmt.Sprintf(`<h1 id="header-title" hx-swap-oob="innerHTML" class="text-white font-black tracking-[0.2em] text-[10px] md:text-sm uppercase">%s</h1>`, title)
+	}
 	return fmt.Sprintf(`
-        <header class="flex items-center gap-4 px-6 md:px-12 py-8 bg-[#09090b]">
+        <header class="flex items-center gap-4 px-6 md:px-12 py-6 md:py-10 bg-[#09090b]">
             <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-600/20">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 12h6"/><path d="M9 16h6"/><path d="M9 8h6"/></svg>
             </div>
-            <h1 class="text-white font-black tracking-[0.2em] text-xs md:text-sm uppercase">%s</h1>
+            <h1 id="header-title" class="text-white font-black tracking-[0.2em] text-[10px] md:text-sm uppercase">%s</h1>
         </header>`, title)
 }
 
@@ -135,18 +138,18 @@ func RenderHeader(title string) string {
 // -------------------------------------
 func RenderBottomBar(active string) string {
 	getClass := func(tab string) string {
-		base := "text-[10px] font-black uppercase tracking-[0.3em] transition-all px-8 py-3 rounded-full border border-transparent"
+		base := "text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] md:tracking-[0.3em] transition-all px-6 md:px-8 py-2.5 md:py-3 rounded-full border border-transparent"
 		if tab == active {
 			return base + " bg-blue-600 text-white shadow-2xl shadow-blue-600/40"
 		}
 		return base + " text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/50"
 	}
 	return fmt.Sprintf(`
-        <nav class="fixed bottom-0 left-0 w-full bg-[#09090b] py-8 px-6 flex items-center justify-center z-[100]">
-            <div class="flex items-center gap-4 md:gap-8">
-                <a href="/" class="%s">Comandas</a>
-                <a href="/cocina" class="%s">Cocina</a>
-                <a href="/config" class="%s">Ajustes</a>
+        <nav id="bottom-bar" class="fixed bottom-0 left-0 w-full bg-[#09090b] py-5 md:py-8 px-6 flex items-center justify-center z-[100]" hx-swap-oob="true">
+            <div class="flex items-center gap-2 md:gap-8">
+                <button hx-get="/" hx-target="#main-content" hx-push-url="true" class="%s">Comandas</button>
+                <button hx-get="/cocina" hx-target="#main-content" hx-push-url="true" class="%s">Cocina</button>
+                <button hx-get="/config" hx-target="#main-content" hx-push-url="true" class="%s">Ajustes</button>
             </div>
         </nav>`, getClass("comandas"), getClass("cocina"), getClass("config"))
 }
@@ -210,17 +213,26 @@ var comandasTmpl = template.Must(template.New("comandas").Parse(`
     </div>
 `))
 
-func RenderComandasPage(w http.ResponseWriter, tables []Table) {
-	w.Write([]byte(layoutHeader))
-	w.Write([]byte(RenderHeader("Seleccionar Mesa")))
-	w.Write([]byte(`<main class="max-w-7xl mx-auto px-6 md:px-12 pb-32">`))
+func RenderComandasPage(w http.ResponseWriter, tables []Table, fullPage bool) {
+	if fullPage {
+		w.Write([]byte(layoutHeader))
+		w.Write([]byte(RenderHeader("Seleccionar Mesa", false)))
+		w.Write([]byte(`<main id="main-content" class="max-w-7xl mx-auto px-6 md:px-12 pb-24 md:pb-32">`))
+	} else {
+		w.Write([]byte(RenderHeader("Seleccionar Mesa", true)))
+		w.Write([]byte(RenderBottomBar("comandas")))
+	}
+
 	comandasTmpl.Execute(w, map[string]interface{}{"Tables": tables})
-	w.Write([]byte(`</main>`))
-	w.Write([]byte(RenderBottomBar("comandas")))
-	w.Write([]byte(layoutFooter))
+
+	if fullPage {
+		w.Write([]byte(`</main>`))
+		w.Write([]byte(RenderBottomBar("comandas")))
+		w.Write([]byte(layoutFooter))
+	}
 }
 
-func handleComandas(w http.ResponseWriter, _ *http.Request) { RenderComandasPage(w, nil) }
+
 
 func RenderSearchSuggestions(w io.Writer, products []Product) {
 	if len(products) == 0 {
@@ -244,15 +256,22 @@ func RenderSearchSuggestions(w io.Writer, products []Product) {
 // -------------------------------------
 // -------------| Cocina
 // -------------------------------------
-func RenderCocinaPage(w http.ResponseWriter, orders []Order) {
+func RenderCocinaPage(w http.ResponseWriter, orders []Order, fullPage bool) {
 	counts := map[string]int{"pendiente": 0, "proceso": 0, "completado": 0}
 	for _, o := range orders {
 		counts[o.Estado]++
 	}
 
-	w.Write([]byte(layoutHeader))
-	w.Write([]byte(RenderHeader("Panel de Cocina")))
-	w.Write([]byte(`<main class="max-w-7xl mx-auto px-6 md:px-12 pb-32" hx-ext="ws" ws-connect="/ws">
+	if fullPage {
+		w.Write([]byte(layoutHeader))
+		w.Write([]byte(RenderHeader("Panel de Cocina", false)))
+		w.Write([]byte(`<main id="main-content" class="max-w-7xl mx-auto px-6 md:px-12 pb-24 md:pb-32" hx-ext="ws" ws-connect="/ws">`))
+	} else {
+		w.Write([]byte(RenderHeader("Panel de Cocina", true)))
+		w.Write([]byte(RenderBottomBar("cocina")))
+	}
+
+	w.Write([]byte(`
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <!-- PENDIENTE -->
                 <div class="flex flex-col gap-4 bg-zinc-900/20 border border-zinc-800/50 rounded-[2.5rem] p-4 min-h-[70vh]">
@@ -298,10 +317,13 @@ func RenderCocinaPage(w http.ResponseWriter, orders []Order) {
 	}
 	w.Write([]byte(`</div>
                 </div>
-            </div>
-        </main>`))
-	w.Write([]byte(RenderBottomBar("cocina")))
-	w.Write([]byte(layoutFooter))
+            </div>`))
+
+	if fullPage {
+		w.Write([]byte(`</main>`))
+		w.Write([]byte(RenderBottomBar("cocina")))
+		w.Write([]byte(layoutFooter))
+	}
 }
 
 func RenderOrderCard(id int, mesa, plato, estado string) string {
@@ -314,13 +336,18 @@ func RenderOrderCard(id int, mesa, plato, estado string) string {
 	}
 
 	return fmt.Sprintf(`
-		<div id="order-%d" class="p-6 bg-zinc-900/60 border border-zinc-800/50 rounded-[2rem] flex flex-col gap-4 animate-in fade-in zoom-in duration-300">
+		<div id="order-%d" class="p-5 md:p-6 bg-zinc-900/60 border border-zinc-800/50 rounded-[2rem] flex flex-col gap-4 animate-in fade-in zoom-in duration-300">
 			<div class="flex flex-col gap-1">
 				<span class="text-[8px] font-black text-zinc-600 uppercase tracking-[0.2em]">%s</span>
-				<h3 class="font-bold text-lg text-white leading-tight tracking-tight">%s</h3>
+				<h3 class="font-bold text-base md:text-lg text-white leading-tight tracking-tight">%s</h3>
 			</div>
-			<button hx-post="/api/orders/update/%d?status=%s" class="w-full py-4 text-[10px] font-black uppercase tracking-[0.2em] %s rounded-2xl transition-all active:scale-95">%s</button>
-		</div>`, id, mesa, plato, id, nextStatus, btnClass, btnText)
+			<div class="text-zinc-400 text-xs md:text-sm leading-relaxed font-medium bg-zinc-950/30 p-4 rounded-2xl border border-zinc-800/30">
+				%s
+			</div>
+			<button hx-post="/api/orders/update/%d?status=%s" class="w-full py-4 rounded-xl font-black text-[10px] uppercase tracking-[0.2em] transition-all active:scale-[0.98] %s">
+				%s
+			</button>
+		</div>`, id, mesa, plato, plato, id, nextStatus, btnClass, btnText)
 }
 
 // -------------------------------------
@@ -361,17 +388,26 @@ var configTmpl = template.Must(template.New("config").Parse(`
     </div>
 `))
 
-func RenderConfigPage(w http.ResponseWriter, tables []Table) {
-	w.Write([]byte(layoutHeader))
-	w.Write([]byte(RenderHeader("Configuración")))
-	w.Write([]byte(`<main class="max-w-7xl mx-auto px-6 md:px-12 pb-32 relative">`))
+func RenderConfigPage(w http.ResponseWriter, tables []Table, fullPage bool) {
+	if fullPage {
+		w.Write([]byte(layoutHeader))
+		w.Write([]byte(RenderHeader("Configuración", false)))
+		w.Write([]byte(`<main id="main-content" class="max-w-7xl mx-auto px-6 md:px-12 pb-24 md:pb-32 relative">`))
+	} else {
+		w.Write([]byte(RenderHeader("Configuración", true)))
+		w.Write([]byte(RenderBottomBar("config")))
+	}
+
 	configTmpl.Execute(w, map[string]interface{}{"Tables": tables})
-	w.Write([]byte(`</main>`))
-	w.Write([]byte(RenderBottomBar("config")))
-	w.Write([]byte(layoutFooter))
+
+	if fullPage {
+		w.Write([]byte(`</main>`))
+		w.Write([]byte(RenderBottomBar("config")))
+		w.Write([]byte(layoutFooter))
+	}
 }
 
-func handleConfig(w http.ResponseWriter, _ *http.Request) { RenderConfigPage(w, nil) }
+
 
 func RenderTableList(w io.Writer, tables []Table) {
 	for _, t := range tables {
