@@ -304,7 +304,6 @@ func main() {
 			hub.broadcast <- []byte(html)
 			
 			w.WriteHeader(http.StatusOK)
-`))
 		}
 	})
 
