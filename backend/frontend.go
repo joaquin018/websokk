@@ -38,6 +38,8 @@ const layoutHeader = `
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Comandas App</title>
     <meta name="view-transition" content="same-origin">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <style> body { font-family: 'Inter', sans-serif; } </style>
     <script src="https://unpkg.com/htmx.org@1.9.11"></script>
     <script src="https://unpkg.com/htmx.org/dist/ext/ws.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -129,83 +131,80 @@ const layoutFooter = `
 // -------------| Comandas
 // -------------------------------------
 var comandasTmpl = template.Must(template.New("comandas").Parse(layoutHeader + `
-    <main class="max-w-6xl mx-auto p-4 md:p-8 pb-32 relative">
-        <!-- VISTA 1: SELECCIÓN DE MESA -->
-        <div id="view-tables" class="relative z-10 mt-4 md:mt-10">
-            <header class="mb-12 text-center">
-                <h2 class="text-3xl md:text-5xl font-black mb-2 tracking-tighter">Seleccionar Mesa</h2>
-                <p class="text-zinc-500 text-[10px] md:text-xs uppercase font-bold tracking-[0.2em]">Toca una mesa para empezar el pedido</p>
-            </header>
-
-            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
-                {{range .Tables}}
-                <button type="button" onclick="selectTable('{{.Name}}', this)" class="group flex flex-col items-center justify-center gap-6 aspect-video md:aspect-square bg-zinc-900/40 border border-zinc-800/50 rounded-[2.5rem] transition-all hover:bg-blue-600/10 hover:border-blue-500/50 active:scale-95">
-                    <div class="p-4 bg-zinc-950/50 rounded-2xl group-hover:bg-blue-500 group-hover:text-white transition-all text-zinc-600">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><rect width="18" height="12" x="3" y="6" rx="2"/></svg>
-                    </div>
-                    <span class="font-black text-xl md:text-2xl tracking-tighter text-zinc-300 group-hover:text-white">{{.Name}}</span>
-                </button>
-                {{else}}
-                <div class="col-span-full p-20 border-2 border-dashed border-zinc-900 rounded-[3rem] text-center">
-                    <p class="text-zinc-700 font-black uppercase tracking-[0.3em] mb-4">No hay mesas configuradas</p>
-                    <a href="/config" class="text-blue-500 font-bold hover:underline">Ir a configuración</a>
-                </div>
-                {{end}}
+    <div class="min-h-screen bg-[#09090b] text-zinc-400 font-sans selection:bg-blue-500/30">
+        <!-- HEADER -->
+        <header class="flex items-center gap-4 px-6 md:px-12 py-8">
+            <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-600/20">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 12h6"/><path d="M9 16h6"/><path d="M9 8h6"/></svg>
             </div>
-        </div>
+            <h1 class="text-white font-black tracking-[0.2em] text-sm md:text-base uppercase">Seleccionar Mesa</h1>
+        </header>
 
-        <!-- VISTA 2: BUSCADOR Y PEDIDO -->
-        <div id="view-order" class="hidden relative z-10 mt-4 md:mt-10">
-            <header class="mb-8 flex items-center justify-between">
-                <button onclick="backToTables()" class="p-4 bg-zinc-900/60 border border-zinc-800 rounded-2xl text-zinc-400 hover:text-white transition-all">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-                </button>
-                <div class="text-center">
-                    <p class="text-zinc-500 text-[10px] md:text-xs uppercase font-bold tracking-[0.2em]">Pedido para</p>
-                    <h2 id="selected-mesa-display" class="text-3xl md:text-4xl font-black tracking-tighter text-blue-500">Mesa X</h2>
-                </div>
-                <div class="w-14"></div> <!-- Spacer -->
-            </header>
-
-            <div class="max-w-2xl mx-auto flex flex-col gap-8">
-                <div class="relative">
-                    <label class="block text-[10px] text-zinc-500 uppercase font-black mb-3 ml-1 tracking-widest">Buscador Rápido</label>
-                    <div class="relative group">
-                        <input type="text" id="product-search" name="q" hx-get="/api/products/search" hx-trigger="keyup changed delay:300ms" hx-target="#search-results" placeholder="Escribe para buscar..." class="w-full bg-zinc-900/40 backdrop-blur-xl border border-zinc-800 p-4 md:p-6 rounded-2xl md:rounded-3xl focus:ring-2 focus:ring-blue-500 outline-none transition-all placeholder:text-zinc-700 text-lg">
-                        <div class="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-700 group-focus-within:text-blue-500 transition-colors">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-                        </div>
-                    </div>
-                    <div id="search-results" class="absolute w-full mt-3 z-[60] flex flex-col gap-2 drop-shadow-2xl"></div>
-                </div>
-
-                <form hx-post="/api/orders" hx-swap="none" hx-on::after-request="this.reset(); backToTables()" class="flex flex-col gap-6 bg-zinc-900/20 p-6 md:p-8 rounded-[2rem] border border-zinc-800/50 backdrop-blur-sm">
-                    <input type="hidden" name="mesa" id="mesa-input">
-                    <div>
-                        <label class="block text-[10px] text-zinc-500 uppercase font-black mb-3 ml-1 tracking-widest">Detalles del Pedido</label>
-                        <textarea id="order-text" name="plato" placeholder="Los productos seleccionados aparecerán aquí..." class="w-full bg-zinc-950/50 border border-zinc-800 p-4 md:p-5 rounded-2xl md:rounded-3xl focus:ring-2 focus:ring-blue-500 outline-none h-48 transition-all font-medium text-lg leading-relaxed" required></textarea>
-                    </div>
-                    <button type="submit" class="group relative overflow-hidden bg-white text-black py-5 md:py-6 rounded-2xl md:rounded-3xl font-black text-xl shadow-2xl active:scale-95 transition-all">
-                        <span class="relative z-10 flex items-center justify-center gap-3 uppercase">Confirmar y Enviar <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></svg></span>
+        <main class="max-w-7xl mx-auto px-6 md:px-12 pb-32 relative">
+            <!-- VISTA 1: SELECCIÓN DE MESA -->
+            <div id="view-tables" class="relative z-10">
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                    {{range .Tables}}
+                    <button type="button" onclick="selectTable('{{.Name}}', this)" class="group aspect-square bg-zinc-900/40 border border-zinc-800/50 rounded-[2.5rem] flex items-center justify-center transition-all hover:bg-zinc-800 hover:border-zinc-700 active:scale-95">
+                        <span class="font-black text-xl md:text-2xl tracking-tight text-white">{{.Name}}</span>
                     </button>
-                </form>
+                    {{else}}
+                    <div class="col-span-full p-20 border-2 border-dashed border-zinc-900 rounded-[3rem] text-center">
+                        <p class="text-zinc-700 font-black uppercase tracking-[0.3em] mb-4">No hay mesas configuradas</p>
+                        <a href="/config" class="text-blue-500 font-bold hover:underline">Ir a configuración</a>
+                    </div>
+                    {{end}}
+                </div>
             </div>
-        </div>
-    </main>
 
-    <!-- NAVEGACIÓN INFERIOR (Estilo App) -->
-    <nav class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-sm">
-        <div class="bg-zinc-900/80 backdrop-blur-2xl border border-zinc-800/50 p-2 rounded-[2.5rem] flex items-center justify-around shadow-2xl shadow-black">
-            <a href="/" class="flex-1 flex flex-col items-center gap-1 py-3 px-6 rounded-[2rem] transition-all bg-blue-600 text-white">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 12h6"/><path d="M9 16h6"/><path d="M9 8h6"/></svg>
-                <span class="text-[9px] font-black uppercase tracking-widest">Comandas</span>
-            </a>
-            <a href="/cocina" class="flex-1 flex flex-col items-center gap-1 py-3 px-6 rounded-[2rem] transition-all text-zinc-500 hover:text-white">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
-                <span class="text-[9px] font-black uppercase tracking-widest">Cocina</span>
-            </a>
-        </div>
-    </nav>
+            <!-- VISTA 2: BUSCADOR Y PEDIDO -->
+            <div id="view-order" class="hidden relative z-10">
+                <header class="mb-8 flex items-center justify-between">
+                    <button onclick="backToTables()" class="p-4 bg-zinc-900/60 border border-zinc-800 rounded-2xl text-zinc-400 hover:text-white transition-all">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                    </button>
+                    <div class="text-center">
+                        <p class="text-zinc-500 text-[10px] md:text-xs uppercase font-bold tracking-[0.2em]">Pedido para</p>
+                        <h2 id="selected-mesa-display" class="text-3xl md:text-4xl font-black tracking-tighter text-blue-500">Mesa X</h2>
+                    </div>
+                    <div class="w-14"></div> <!-- Spacer -->
+                </header>
+
+                <div class="max-w-2xl mx-auto flex flex-col gap-8">
+                    <div class="relative">
+                        <label class="block text-[10px] text-zinc-500 uppercase font-black mb-3 ml-1 tracking-widest">Buscador Rápido</label>
+                        <div class="relative group">
+                            <input type="text" id="product-search" name="q" hx-get="/api/products/search" hx-trigger="keyup changed delay:300ms" hx-target="#search-results" placeholder="Escribe para buscar..." class="w-full bg-zinc-900/40 backdrop-blur-xl border border-zinc-800 p-4 md:p-6 rounded-2xl md:rounded-3xl focus:ring-2 focus:ring-blue-500 outline-none transition-all placeholder:text-zinc-700 text-lg">
+                            <div class="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-700 group-focus-within:text-blue-500 transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                            </div>
+                        </div>
+                        <div id="search-results" class="absolute w-full mt-3 z-[60] flex flex-col gap-2 drop-shadow-2xl"></div>
+                    </div>
+
+                    <form hx-post="/api/orders" hx-swap="none" hx-on::after-request="this.reset(); backToTables()" class="flex flex-col gap-6 bg-zinc-900/20 p-6 md:p-8 rounded-[2rem] border border-zinc-800/50 backdrop-blur-sm">
+                        <input type="hidden" name="mesa" id="mesa-input">
+                        <div>
+                            <label class="block text-[10px] text-zinc-500 uppercase font-black mb-3 ml-1 tracking-widest">Detalles del Pedido</label>
+                            <textarea id="order-text" name="plato" placeholder="Los productos seleccionados aparecerán aquí..." class="w-full bg-zinc-950/50 border border-zinc-800 p-4 md:p-5 rounded-2xl md:rounded-3xl focus:ring-2 focus:ring-blue-500 outline-none h-48 transition-all font-medium text-lg leading-relaxed" required></textarea>
+                        </div>
+                        <button type="submit" class="group relative overflow-hidden bg-white text-black py-5 md:py-6 rounded-2xl md:rounded-3xl font-black text-xl shadow-2xl active:scale-95 transition-all">
+                            <span class="relative z-10 flex items-center justify-center gap-3 uppercase">Confirmar y Enviar <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></svg></span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </main>
+
+        <!-- NAVEGACIÓN INFERIOR -->
+        <nav class="fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] w-auto">
+            <div class="bg-zinc-900/90 backdrop-blur-2xl border border-zinc-800/50 p-1.5 rounded-full flex items-center gap-1 shadow-2xl">
+                <a href="/" class="px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-widest bg-blue-600 text-white shadow-lg shadow-blue-600/20">Comandas</a>
+                <a href="/cocina" class="px-6 py-3 rounded-full text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:text-zinc-200 transition-all">Cocina</a>
+                <a href="/config" class="px-6 py-3 rounded-full text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:text-zinc-200 transition-all">Ajustes</a>
+            </div>
+        </nav>
+    </div>
 ` + layoutFooter))
 
 func RenderComandasPage(w http.ResponseWriter, tables []Table) {
@@ -237,85 +236,101 @@ func RenderSearchSuggestions(w io.Writer, products []Product) {
 // -------------| Cocina
 // -------------------------------------
 func RenderCocinaPage(w http.ResponseWriter, orders []Order) {
+	counts := map[string]int{"pendiente": 0, "proceso": 0, "completado": 0}
+	for _, o := range orders {
+		counts[o.Estado]++
+	}
+
 	w.Write([]byte(layoutHeader))
 	w.Write([]byte(`
-    <main class="p-4 md:p-8 relative" hx-ext="ws" ws-connect="/ws">
-        <div class="absolute top-40 left-1/4 -inset-10 bg-blue-500/5 blur-3xl rounded-full w-96 h-96 opacity-20"></div>
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 relative z-10">
-            <div class="flex flex-col gap-5">
-                <div class="flex items-center gap-3 px-4"><div class="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></div><h2 class="font-black text-zinc-400 text-[10px] uppercase tracking-[0.2em]">Pendientes</h2></div>
-                <div id="pedidos-col" class="kanban-col flex flex-col gap-4 p-3 md:p-5 bg-zinc-900/20 backdrop-blur-md border border-zinc-800/50 rounded-[2.5rem] md:rounded-[3rem]">`))
+    <div class="min-h-screen bg-[#09090b] text-zinc-400 font-sans selection:bg-blue-500/30">
+        <!-- HEADER -->
+        <header class="flex items-center gap-4 px-6 md:px-12 py-8">
+            <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-600/20">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 12h6"/><path d="M9 16h6"/><path d="M9 8h6"/></svg>
+            </div>
+            <h1 class="text-white font-black tracking-[0.2em] text-sm md:text-base">PANEL DE COCINA</h1>
+        </header>
+
+        <!-- KANBAN -->
+        <main class="px-4 md:px-10 pb-32" hx-ext="ws" ws-connect="/ws">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- PENDIENTE -->
+                <div class="flex flex-col gap-4 bg-zinc-900/20 border border-zinc-800/50 rounded-[2.5rem] p-4 min-h-[70vh]">
+                    <div class="flex items-center justify-between px-4 py-2">
+                        <h2 class="font-black text-[10px] uppercase tracking-[0.2em] text-zinc-500">Pendiente</h2>
+                        <span class="w-5 h-5 flex items-center justify-center bg-zinc-800/50 rounded-md text-[9px] font-bold text-zinc-500">` + strconv.Itoa(counts["pendiente"]) + `</span>
+                    </div>
+                    <div id="pedidos-col" class="flex flex-col gap-4">`))
 	for _, o := range orders {
 		if o.Estado == "pendiente" {
 			w.Write([]byte(RenderOrderCard(o.ID, o.Mesa, o.Plato, o.Estado)))
 		}
 	}
 	w.Write([]byte(`</div>
-            </div>
-            <div class="flex flex-col gap-5">
-                <div class="flex items-center gap-3 px-4"><div class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div><h2 class="font-black text-zinc-400 text-[10px] uppercase tracking-[0.2em]">En Proceso</h2></div>
-                <div id="proceso-col" class="kanban-col flex flex-col gap-4 p-3 md:p-5 bg-zinc-900/20 backdrop-blur-md border border-zinc-800/50 rounded-[2.5rem] md:rounded-[3rem]">`))
+                </div>
+
+                <!-- EN PROCESO -->
+                <div class="flex flex-col gap-4 bg-zinc-900/20 border border-zinc-800/50 rounded-[2.5rem] p-4 min-h-[70vh]">
+                    <div class="flex items-center justify-between px-4 py-2">
+                        <h2 class="font-black text-[10px] uppercase tracking-[0.2em] text-blue-500">En Proceso</h2>
+                        <span class="w-5 h-5 flex items-center justify-center bg-blue-500/10 rounded-md text-[9px] font-bold text-blue-500">` + strconv.Itoa(counts["proceso"]) + `</span>
+                    </div>
+                    <div id="proceso-col" class="flex flex-col gap-4">`))
 	for _, o := range orders {
 		if o.Estado == "proceso" {
 			w.Write([]byte(RenderOrderCard(o.ID, o.Mesa, o.Plato, o.Estado)))
 		}
 	}
 	w.Write([]byte(`</div>
-            </div>
-            <div class="flex flex-col gap-5">
-                <div class="flex items-center gap-3 px-4"><div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div><h2 class="font-black text-zinc-400 text-[10px] uppercase tracking-[0.2em]">Completado</h2></div>
-                <div id="completado-col" class="kanban-col flex flex-col gap-4 p-3 md:p-5 bg-zinc-900/20 backdrop-blur-md border border-zinc-800/50 rounded-[2.5rem] md:rounded-[3rem]">`))
+                </div>
+
+                <!-- COMPLETADO -->
+                <div class="flex flex-col gap-4 bg-zinc-900/20 border border-zinc-800/50 rounded-[2.5rem] p-4 min-h-[70vh]">
+                    <div class="flex items-center justify-between px-4 py-2">
+                        <h2 class="font-black text-[10px] uppercase tracking-[0.2em] text-green-500">Completado</h2>
+                        <span class="w-5 h-5 flex items-center justify-center bg-green-500/10 rounded-md text-[9px] font-bold text-green-500">` + strconv.Itoa(counts["completado"]) + `</span>
+                    </div>
+                    <div id="completado-col" class="flex flex-col gap-4">`))
 	for _, o := range orders {
 		if o.Estado == "completado" {
 			w.Write([]byte(RenderOrderCard(o.ID, o.Mesa, o.Plato, o.Estado)))
 		}
 	}
 	w.Write([]byte(`</div>
+                </div>
             </div>
-        </div>
-    </main>
+        </main>
 
-    <!-- NAVEGACIÓN INFERIOR (Estilo App) -->
-    <nav class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-sm">
-        <div class="bg-zinc-900/80 backdrop-blur-2xl border border-zinc-800/50 p-2 rounded-[2.5rem] flex items-center justify-around shadow-2xl shadow-black">
-            <a href="/" class="flex-1 flex flex-col items-center gap-1 py-3 px-6 rounded-[2rem] transition-all text-zinc-500 hover:text-white">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 12h6"/><path d="M9 16h6"/><path d="M9 8h6"/></svg>
-                <span class="text-[9px] font-black uppercase tracking-widest">Comandas</span>
-            </a>
-            <a href="/cocina" class="flex-1 flex flex-col items-center gap-1 py-3 px-6 rounded-[2rem] transition-all bg-blue-600 text-white">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
-                <span class="text-[9px] font-black uppercase tracking-widest">Cocina</span>
-            </a>
-        </div>
-    </nav>
+        <!-- NAVEGACIÓN INFERIOR -->
+        <nav class="fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] w-auto">
+            <div class="bg-zinc-900/90 backdrop-blur-2xl border border-zinc-800/50 p-1.5 rounded-full flex items-center gap-1 shadow-2xl">
+                <a href="/" class="px-6 py-3 rounded-full text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:text-zinc-200 transition-all">Comandas</a>
+                <a href="/cocina" class="px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-widest bg-blue-600 text-white shadow-lg shadow-blue-600/20">Cocina</a>
+                <a href="/config" class="px-6 py-3 rounded-full text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:text-zinc-200 transition-all">Ajustes</a>
+            </div>
+        </nav>
+    </div>
 `))
 	w.Write([]byte(layoutFooter))
 }
 
 func RenderOrderCard(id int, mesa, plato, estado string) string {
-	btnText, nextStatus, btnClass := "EMPEZAR", "proceso", "bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
-	switch estado {
-	case "proceso":
-		btnText, nextStatus, btnClass = "TERMINAR", "completado", "bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-900/20"
-	case "completado":
-		btnText, nextStatus, btnClass = "ENTREGAR", "delete", "bg-green-600 hover:bg-green-500 text-white shadow-lg shadow-green-900/20"
+	btnText, nextStatus, btnClass := "EMPEZAR", "proceso", "bg-zinc-800/50 hover:bg-zinc-700 text-zinc-400"
+	if estado == "proceso" {
+		btnText, nextStatus, btnClass = "TERMINAR", "completado", "bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/20"
+	} else if estado == "completado" {
+		btnText, nextStatus, btnClass = "ENTREGAR", "delete", "bg-green-600 hover:bg-green-500 text-white shadow-lg shadow-green-600/20"
 	}
+
 	return fmt.Sprintf(`
-		<div id="order-%d" class="p-6 md:p-8 bg-zinc-950/80 backdrop-blur-xl border border-zinc-800/80 rounded-[2rem] md:rounded-[2.5rem] shadow-2xl animate-in fade-in zoom-in slide-in-from-top-4 duration-500 group">
-			<div class="flex justify-between items-center mb-5">
-				<span class="text-[10px] font-black text-zinc-700 uppercase tracking-[0.3em]">#%d</span>
-				<span class="px-4 py-1.5 bg-blue-500 text-white text-[10px] font-black uppercase rounded-full tracking-widest shadow-lg shadow-blue-500/20">%s</span>
+		<div id="order-%d" class="p-6 bg-zinc-900/60 border border-zinc-800/50 rounded-[2rem] flex flex-col gap-4 animate-in fade-in zoom-in duration-300">
+			<div class="flex flex-col gap-1">
+				<span class="text-[8px] font-black text-zinc-600 uppercase tracking-[0.2em]">%s</span>
+				<h3 class="font-bold text-lg text-white leading-tight tracking-tight">%s</h3>
 			</div>
-			<div class="mb-8">
-				<p class="text-zinc-600 text-[10px] uppercase font-black mb-3 tracking-widest flex items-center gap-2">
-                    <span class="w-1 h-1 rounded-full bg-zinc-800"></span> DETALLES DEL PEDIDO
-                </p>
-				<h3 class="font-bold text-xl md:text-2xl text-zinc-100 leading-tight whitespace-pre-wrap tracking-tight">%s</h3>
-			</div>
-			<div class="flex">
-				<button hx-post="/api/orders/update/%d?status=%s" class="w-full py-5 text-xs font-black uppercase tracking-[0.2em] %s rounded-2xl md:rounded-3xl transition-all active:scale-95">%s</button>
-			</div>
-		</div>`, id, id, mesa, plato, id, nextStatus, btnClass, btnText)
+			<button hx-post="/api/orders/update/%d?status=%s" class="w-full py-4 text-[10px] font-black uppercase tracking-[0.2em] %s rounded-2xl transition-all active:scale-95">%s</button>
+		</div>`, id, mesa, plato, id, nextStatus, btnClass, btnText)
 }
 
 // -------------------------------------
@@ -409,7 +424,17 @@ func RenderConfigPage(w http.ResponseWriter, tables []Table) {
     </nav>
 `))
 	configTmpl.Execute(w, map[string]interface{}{"Tables": tables})
-	w.Write([]byte(layoutFooter))
+	w.Write([]byte(`
+        <!-- NAVEGACIÓN INFERIOR -->
+        <nav class="fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] w-auto">
+            <div class="bg-zinc-900/90 backdrop-blur-2xl border border-zinc-800/50 p-1.5 rounded-full flex items-center gap-1 shadow-2xl">
+                <a href="/" class="px-6 py-3 rounded-full text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:text-zinc-200 transition-all">Comandas</a>
+                <a href="/cocina" class="px-6 py-3 rounded-full text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:text-zinc-200 transition-all">Cocina</a>
+                <a href="/config" class="px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-widest bg-blue-600 text-white shadow-lg shadow-blue-600/20">Ajustes</a>
+            </div>
+        </nav>
+    </body>
+    </html>`))
 }
 
 func handleConfig(w http.ResponseWriter, _ *http.Request) { RenderConfigPage(w, nil) }
