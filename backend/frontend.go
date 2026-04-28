@@ -110,16 +110,6 @@ const layoutHeader = `
     </style>
 </head>
 <body class="bg-zinc-950 text-zinc-50 antialiased overflow-x-hidden">
-    <nav class="sticky top-0 z-50 bg-zinc-950/80 backdrop-blur-xl border-b border-zinc-800/50 px-4 md:px-12 py-3">
-        <div class="max-w-7xl mx-auto flex items-center justify-end">
-            <!-- Ajustes -->
-            <a href="/config" class="text-zinc-500 hover:text-white transition-all p-2 hover:bg-zinc-800 rounded-2xl border border-transparent hover:border-zinc-700">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>
-                </svg>
-            </a>
-        </div>
-    </nav>
 `
 
 const layoutFooter = `
@@ -128,87 +118,106 @@ const layoutFooter = `
 `
 
 // -------------------------------------
-// -------------| Comandas
+// -------------| Header
 // -------------------------------------
-var comandasTmpl = template.Must(template.New("comandas").Parse(layoutHeader + `
-    <div class="min-h-screen bg-[#09090b] text-zinc-400 font-sans selection:bg-blue-500/30">
-        <!-- HEADER -->
-        <header class="flex items-center gap-4 px-6 md:px-12 py-8">
+func RenderHeader(title string) string {
+	return fmt.Sprintf(`
+        <header class="flex items-center gap-4 px-6 md:px-12 py-8 bg-[#09090b]">
             <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-600/20">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 12h6"/><path d="M9 16h6"/><path d="M9 8h6"/></svg>
             </div>
-            <h1 class="text-white font-black tracking-[0.2em] text-sm md:text-base uppercase">Seleccionar Mesa</h1>
+            <h1 class="text-white font-black tracking-[0.2em] text-xs md:text-sm uppercase">%s</h1>
+        </header>`, title)
+}
+
+// -------------------------------------
+// -------------| Bottom Bar
+// -------------------------------------
+func RenderBottomBar(active string) string {
+	getClass := func(tab string) string {
+		base := "text-[10px] font-black uppercase tracking-[0.3em] transition-all px-8 py-3 rounded-full border border-transparent"
+		if tab == active {
+			return base + " bg-blue-600 text-white shadow-2xl shadow-blue-600/40"
+		}
+		return base + " text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/50"
+	}
+	return fmt.Sprintf(`
+        <nav class="fixed bottom-0 left-0 w-full bg-[#09090b] py-8 px-6 flex items-center justify-center z-[100]">
+            <div class="flex items-center gap-4 md:gap-8">
+                <a href="/" class="%s">Comandas</a>
+                <a href="/cocina" class="%s">Cocina</a>
+                <a href="/config" class="%s">Ajustes</a>
+            </div>
+        </nav>`, getClass("comandas"), getClass("cocina"), getClass("config"))
+}
+
+// -------------------------------------
+// -------------| Comandas
+// -------------------------------------
+var comandasTmpl = template.Must(template.New("comandas").Parse(`
+    <!-- VISTA 1: SELECCIÓN DE MESA -->
+    <div id="view-tables" class="relative z-10">
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+            {{range .Tables}}
+            <button type="button" onclick="selectTable('{{.Name}}', this)" class="group aspect-square bg-zinc-900/40 border border-zinc-800/50 rounded-[2.5rem] flex items-center justify-center transition-all hover:bg-zinc-800 hover:border-zinc-700 active:scale-95">
+                <span class="font-black text-xl md:text-2xl tracking-tight text-white">{{.Name}}</span>
+            </button>
+            {{else}}
+            <div class="col-span-full p-20 border-2 border-dashed border-zinc-900 rounded-[3rem] text-center">
+                <p class="text-zinc-700 font-black uppercase tracking-[0.3em] mb-4">No hay mesas configuradas</p>
+                <a href="/config" class="text-blue-500 font-bold hover:underline">Ir a configuración</a>
+            </div>
+            {{end}}
+        </div>
+    </div>
+
+    <!-- VISTA 2: BUSCADOR Y PEDIDO -->
+    <div id="view-order" class="hidden relative z-10">
+        <header class="mb-8 flex items-center justify-between">
+            <button onclick="backToTables()" class="p-4 bg-zinc-900/60 border border-zinc-800 rounded-2xl text-zinc-400 hover:text-white transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+            </button>
+            <div class="text-center">
+                <p class="text-zinc-500 text-[10px] md:text-xs uppercase font-bold tracking-[0.2em]">Pedido para</p>
+                <h2 id="selected-mesa-display" class="text-3xl md:text-4xl font-black tracking-tighter text-blue-500">Mesa X</h2>
+            </div>
+            <div class="w-14"></div> <!-- Spacer -->
         </header>
 
-        <main class="max-w-7xl mx-auto px-6 md:px-12 pb-32 relative">
-            <!-- VISTA 1: SELECCIÓN DE MESA -->
-            <div id="view-tables" class="relative z-10">
-                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-                    {{range .Tables}}
-                    <button type="button" onclick="selectTable('{{.Name}}', this)" class="group aspect-square bg-zinc-900/40 border border-zinc-800/50 rounded-[2.5rem] flex items-center justify-center transition-all hover:bg-zinc-800 hover:border-zinc-700 active:scale-95">
-                        <span class="font-black text-xl md:text-2xl tracking-tight text-white">{{.Name}}</span>
-                    </button>
-                    {{else}}
-                    <div class="col-span-full p-20 border-2 border-dashed border-zinc-900 rounded-[3rem] text-center">
-                        <p class="text-zinc-700 font-black uppercase tracking-[0.3em] mb-4">No hay mesas configuradas</p>
-                        <a href="/config" class="text-blue-500 font-bold hover:underline">Ir a configuración</a>
+        <div class="max-w-2xl mx-auto flex flex-col gap-8">
+            <div class="relative">
+                <label class="block text-[10px] text-zinc-500 uppercase font-black mb-3 ml-1 tracking-widest">Buscador Rápido</label>
+                <div class="relative group">
+                    <input type="text" id="product-search" name="q" hx-get="/api/products/search" hx-trigger="keyup changed delay:300ms" hx-target="#search-results" placeholder="Escribe para buscar..." class="w-full bg-zinc-900/40 backdrop-blur-xl border border-zinc-800 p-4 md:p-6 rounded-2xl md:rounded-3xl focus:ring-2 focus:ring-blue-500 outline-none transition-all placeholder:text-zinc-700 text-lg">
+                    <div class="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-700 group-focus-within:text-blue-500 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
                     </div>
-                    {{end}}
                 </div>
+                <div id="search-results" class="absolute w-full mt-3 z-[60] flex flex-col gap-2 drop-shadow-2xl"></div>
             </div>
 
-            <!-- VISTA 2: BUSCADOR Y PEDIDO -->
-            <div id="view-order" class="hidden relative z-10">
-                <header class="mb-8 flex items-center justify-between">
-                    <button onclick="backToTables()" class="p-4 bg-zinc-900/60 border border-zinc-800 rounded-2xl text-zinc-400 hover:text-white transition-all">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-                    </button>
-                    <div class="text-center">
-                        <p class="text-zinc-500 text-[10px] md:text-xs uppercase font-bold tracking-[0.2em]">Pedido para</p>
-                        <h2 id="selected-mesa-display" class="text-3xl md:text-4xl font-black tracking-tighter text-blue-500">Mesa X</h2>
-                    </div>
-                    <div class="w-14"></div> <!-- Spacer -->
-                </header>
-
-                <div class="max-w-2xl mx-auto flex flex-col gap-8">
-                    <div class="relative">
-                        <label class="block text-[10px] text-zinc-500 uppercase font-black mb-3 ml-1 tracking-widest">Buscador Rápido</label>
-                        <div class="relative group">
-                            <input type="text" id="product-search" name="q" hx-get="/api/products/search" hx-trigger="keyup changed delay:300ms" hx-target="#search-results" placeholder="Escribe para buscar..." class="w-full bg-zinc-900/40 backdrop-blur-xl border border-zinc-800 p-4 md:p-6 rounded-2xl md:rounded-3xl focus:ring-2 focus:ring-blue-500 outline-none transition-all placeholder:text-zinc-700 text-lg">
-                            <div class="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-700 group-focus-within:text-blue-500 transition-colors">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-                            </div>
-                        </div>
-                        <div id="search-results" class="absolute w-full mt-3 z-[60] flex flex-col gap-2 drop-shadow-2xl"></div>
-                    </div>
-
-                    <form hx-post="/api/orders" hx-swap="none" hx-on::after-request="this.reset(); backToTables()" class="flex flex-col gap-6 bg-zinc-900/20 p-6 md:p-8 rounded-[2rem] border border-zinc-800/50 backdrop-blur-sm">
-                        <input type="hidden" name="mesa" id="mesa-input">
-                        <div>
-                            <label class="block text-[10px] text-zinc-500 uppercase font-black mb-3 ml-1 tracking-widest">Detalles del Pedido</label>
-                            <textarea id="order-text" name="plato" placeholder="Los productos seleccionados aparecerán aquí..." class="w-full bg-zinc-950/50 border border-zinc-800 p-4 md:p-5 rounded-2xl md:rounded-3xl focus:ring-2 focus:ring-blue-500 outline-none h-48 transition-all font-medium text-lg leading-relaxed" required></textarea>
-                        </div>
-                        <button type="submit" class="group relative overflow-hidden bg-white text-black py-5 md:py-6 rounded-2xl md:rounded-3xl font-black text-xl shadow-2xl active:scale-95 transition-all">
-                            <span class="relative z-10 flex items-center justify-center gap-3 uppercase">Confirmar y Enviar <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></svg></span>
-                        </button>
-                    </form>
+            <form hx-post="/api/orders" hx-swap="none" hx-on::after-request="this.reset(); backToTables()" class="flex flex-col gap-6 bg-zinc-900/20 p-6 md:p-8 rounded-[2rem] border border-zinc-800/50 backdrop-blur-sm">
+                <input type="hidden" name="mesa" id="mesa-input">
+                <div>
+                    <label class="block text-[10px] text-zinc-500 uppercase font-black mb-3 ml-1 tracking-widest">Detalles del Pedido</label>
+                    <textarea id="order-text" name="plato" placeholder="Los productos seleccionados aparecerán aquí..." class="w-full bg-zinc-950/50 border border-zinc-800 p-4 md:p-5 rounded-2xl md:rounded-3xl focus:ring-2 focus:ring-blue-500 outline-none h-48 transition-all font-medium text-lg leading-relaxed" required></textarea>
                 </div>
-            </div>
-        </main>
-
-        <!-- NAVEGACIÓN INFERIOR -->
-        <nav class="fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] w-auto">
-            <div class="bg-zinc-900/90 backdrop-blur-2xl border border-zinc-800/50 p-1.5 rounded-full flex items-center gap-1 shadow-2xl">
-                <a href="/" class="px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-widest bg-blue-600 text-white shadow-lg shadow-blue-600/20">Comandas</a>
-                <a href="/cocina" class="px-6 py-3 rounded-full text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:text-zinc-200 transition-all">Cocina</a>
-                <a href="/config" class="px-6 py-3 rounded-full text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:text-zinc-200 transition-all">Ajustes</a>
-            </div>
-        </nav>
+                <button type="submit" class="group relative overflow-hidden bg-white text-black py-5 md:py-6 rounded-2xl md:rounded-3xl font-black text-xl shadow-2xl active:scale-95 transition-all">
+                    <span class="relative z-10 flex items-center justify-center gap-3 uppercase">Confirmar y Enviar <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></svg></span>
+                </button>
+            </form>
+        </div>
     </div>
-` + layoutFooter))
+`))
 
 func RenderComandasPage(w http.ResponseWriter, tables []Table) {
+	w.Write([]byte(layoutHeader))
+	w.Write([]byte(RenderHeader("Seleccionar Mesa")))
+	w.Write([]byte(`<main class="max-w-7xl mx-auto px-6 md:px-12 pb-32">`))
 	comandasTmpl.Execute(w, map[string]interface{}{"Tables": tables})
+	w.Write([]byte(`</main>`))
+	w.Write([]byte(RenderBottomBar("comandas")))
+	w.Write([]byte(layoutFooter))
 }
 
 func handleComandas(w http.ResponseWriter, _ *http.Request) { RenderComandasPage(w, nil) }
@@ -242,18 +251,8 @@ func RenderCocinaPage(w http.ResponseWriter, orders []Order) {
 	}
 
 	w.Write([]byte(layoutHeader))
-	w.Write([]byte(`
-    <div class="min-h-screen bg-[#09090b] text-zinc-400 font-sans selection:bg-blue-500/30">
-        <!-- HEADER -->
-        <header class="flex items-center gap-4 px-6 md:px-12 py-8">
-            <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-600/20">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 12h6"/><path d="M9 16h6"/><path d="M9 8h6"/></svg>
-            </div>
-            <h1 class="text-white font-black tracking-[0.2em] text-sm md:text-base">PANEL DE COCINA</h1>
-        </header>
-
-        <!-- KANBAN -->
-        <main class="px-4 md:px-10 pb-32" hx-ext="ws" ws-connect="/ws">
+	w.Write([]byte(RenderHeader("Panel de Cocina")))
+	w.Write([]byte(`<main class="max-w-7xl mx-auto px-6 md:px-12 pb-32" hx-ext="ws" ws-connect="/ws">
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <!-- PENDIENTE -->
                 <div class="flex flex-col gap-4 bg-zinc-900/20 border border-zinc-800/50 rounded-[2.5rem] p-4 min-h-[70vh]">
@@ -300,18 +299,8 @@ func RenderCocinaPage(w http.ResponseWriter, orders []Order) {
 	w.Write([]byte(`</div>
                 </div>
             </div>
-        </main>
-
-        <!-- NAVEGACIÓN INFERIOR -->
-        <nav class="fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] w-auto">
-            <div class="bg-zinc-900/90 backdrop-blur-2xl border border-zinc-800/50 p-1.5 rounded-full flex items-center gap-1 shadow-2xl">
-                <a href="/" class="px-6 py-3 rounded-full text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:text-zinc-200 transition-all">Comandas</a>
-                <a href="/cocina" class="px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-widest bg-blue-600 text-white shadow-lg shadow-blue-600/20">Cocina</a>
-                <a href="/config" class="px-6 py-3 rounded-full text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:text-zinc-200 transition-all">Ajustes</a>
-            </div>
-        </nav>
-    </div>
-`))
+        </main>`))
+	w.Write([]byte(RenderBottomBar("cocina")))
 	w.Write([]byte(layoutFooter))
 }
 
@@ -337,104 +326,54 @@ func RenderOrderCard(id int, mesa, plato, estado string) string {
 // -------------| Ajustes
 // -------------------------------------
 var configTmpl = template.Must(template.New("config").Parse(`
-    <main class="max-w-6xl mx-auto p-4 md:p-8 relative">
-        <div class="absolute top-20 left-[-10%] bg-blue-500/5 blur-[120px] rounded-full w-96 h-96 opacity-30"></div>
-        
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 relative z-10">
-            <!-- Gestión de Mesas -->
-            <div class="lg:col-span-4 flex flex-col gap-8">
-                <div>
-                    <h3 class="text-zinc-500 uppercase text-[10px] font-black tracking-widest mb-6 ml-2">Capacidad del Local</h3>
-                    <form hx-post="/api/tables" hx-target="#table-list" class="flex flex-col gap-4 bg-zinc-900/40 p-6 rounded-[2rem] border border-zinc-800/50 backdrop-blur-md">
-                        <label class="text-[10px] text-zinc-500 uppercase font-black ml-1 tracking-widest">¿Cuántas mesas tienes?</label>
-                        <input type="number" name="count" min="1" max="50" placeholder="Ej: 10" class="bg-zinc-950/50 border border-zinc-800 p-4 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition-all text-2xl font-black text-center" required>
-                        <button type="submit" class="bg-zinc-100 text-black hover:bg-white py-4 rounded-xl font-black uppercase text-[10px] tracking-widest active:scale-95 transition-all">Generar Mesas Automáticamente</button>
-                    </form>
-                </div>
-                <div id="table-list" class="grid grid-cols-2 gap-3 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar">
-                    {{range .Tables}}
-                        <div class="p-3 bg-zinc-900/60 border border-zinc-800 rounded-xl text-center">
-                            <span class="font-bold text-zinc-400 text-xs">{{.Name}}</span>
-                        </div>
-                    {{end}}
-                </div>
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 relative z-10">
+        <!-- Gestión de Mesas -->
+        <div class="lg:col-span-4 flex flex-col gap-8">
+            <div>
+                <h3 class="text-zinc-500 uppercase text-[10px] font-black tracking-widest mb-6 ml-2">Capacidad del Local</h3>
+                <form hx-post="/api/tables" hx-target="#table-list" class="flex flex-col gap-4 bg-zinc-900/40 p-6 rounded-[2rem] border border-zinc-800/50 backdrop-blur-md">
+                    <label class="text-[10px] text-zinc-500 uppercase font-black ml-1 tracking-widest">¿Cuántas mesas tienes?</label>
+                    <input type="number" name="count" min="1" max="50" placeholder="Ej: 10" class="bg-zinc-950/50 border border-zinc-800 p-4 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition-all text-2xl font-black text-center" required>
+                    <button type="submit" class="bg-zinc-100 text-black hover:bg-white py-4 rounded-xl font-black uppercase text-[10px] tracking-widest active:scale-95 transition-all">Generar Mesas Automáticamente</button>
+                </form>
             </div>
-
-            <!-- Gestión del Menú -->
-            <div class="lg:col-span-8 flex flex-col gap-8">
-                <div>
-                    <h3 class="text-zinc-500 uppercase text-[10px] font-black tracking-widest mb-6 ml-2">Nuevo Producto</h3>
-                    <form hx-post="/api/products" hx-target="#product-list" hx-on::after-request="this.reset()" class="grid grid-cols-1 md:grid-cols-2 gap-5 bg-zinc-900/40 p-6 md:p-8 rounded-[2.5rem] border border-zinc-800/50 backdrop-blur-md">
-                        <div class="flex flex-col gap-4">
-                            <input type="text" name="name" oninput="formatName(this)" placeholder="Nombre del Producto" class="bg-zinc-950/50 border border-zinc-800 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 transition-all" required>
-                            <input type="text" name="price" oninput="formatPrice(this)" placeholder="Precio (CLP)" class="bg-zinc-950/50 border border-zinc-800 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 transition-all" required>
-                        </div>
-                        <textarea name="description" oninput="formatSentence(this)" placeholder="Descripción breve..." class="bg-zinc-950/50 border border-zinc-800 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 h-full min-h-[120px] transition-all" required></textarea>
-                        <button type="submit" class="md:col-span-2 bg-blue-600 hover:bg-blue-500 py-5 rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl shadow-blue-900/20 active:scale-95 transition-all">Guardar en el Menú</button>
-                    </form>
-                </div>
-                <div id="product-list" hx-get="/api/products" hx-trigger="load" class="grid grid-cols-1 gap-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
-                    <div class="p-8 text-center border-2 border-dashed border-zinc-900 rounded-[2rem] text-zinc-700 font-bold uppercase text-[10px] tracking-widest">Cargando inventario...</div>
-                </div>
+            <div id="table-list" class="grid grid-cols-2 gap-3 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar">
+                {{range .Tables}}
+                    <div class="p-3 bg-zinc-900/60 border border-zinc-800 rounded-xl text-center">
+                        <span class="font-bold text-zinc-400 text-xs">{{.Name}}</span>
+                    </div>
+                {{end}}
             </div>
         </div>
-    </main>
+
+        <!-- Gestión del Menú -->
+        <div class="lg:col-span-8 flex flex-col gap-8">
+            <div>
+                <h3 class="text-zinc-500 uppercase text-[10px] font-black tracking-widest mb-6 ml-2">Nuevo Producto</h3>
+                <form hx-post="/api/products" hx-target="#product-list" hx-on::after-request="this.reset()" class="grid grid-cols-1 md:grid-cols-2 gap-5 bg-zinc-900/40 p-6 md:p-8 rounded-[2.5rem] border border-zinc-800/50 backdrop-blur-md">
+                    <div class="flex flex-col gap-4">
+                        <input type="text" name="name" oninput="formatName(this)" placeholder="Nombre del Producto" class="bg-zinc-950/50 border border-zinc-800 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 transition-all" required>
+                        <input type="text" name="price" oninput="formatPrice(this)" placeholder="Precio (CLP)" class="bg-zinc-950/50 border border-zinc-800 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 transition-all" required>
+                    </div>
+                    <textarea name="description" oninput="formatSentence(this)" placeholder="Descripción breve..." class="bg-zinc-950/50 border border-zinc-800 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 h-full min-h-[120px] transition-all" required></textarea>
+                    <button type="submit" class="md:col-span-2 bg-blue-600 hover:bg-blue-500 py-5 rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl shadow-blue-900/20 active:scale-95 transition-all">Guardar en el Menú</button>
+                </form>
+            </div>
+            <div id="product-list" hx-get="/api/products" hx-trigger="load" class="grid grid-cols-1 gap-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+                <div class="p-8 text-center border-2 border-dashed border-zinc-900 rounded-[2rem] text-zinc-700 font-bold uppercase text-[10px] tracking-widest">Cargando inventario...</div>
+            </div>
+        </div>
+    </div>
 `))
 
 func RenderConfigPage(w http.ResponseWriter, tables []Table) {
-	w.Write([]byte(`
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Configuraciones</title>
-    <meta name="view-transition" content="same-origin">
-    <script src="https://unpkg.com/htmx.org@1.9.11"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://instant.page/5.2.0" type="module" integrity="sha384-jnZyxPjiipSbm6WFEJrqQUqzHKyeWMLzQoUf69GON5m929OdzP64VGupxzGTzG++"></script>
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => { navigator.serviceWorker.register('/sw.js'); });
-        }
-        function formatName(el) { el.value = el.value.toLowerCase().replace(/\b\w/g, l => l.toUpperCase()); }
-        function formatSentence(el) { if (el.value.length > 0) el.value = el.value.charAt(0).toUpperCase() + el.value.slice(1).toLowerCase(); }
-        function formatPrice(el) {
-            let val = el.value.replace(/\D/g, "");
-            if (val === "") { el.value = ""; return; }
-            el.value = "$" + new Intl.NumberFormat("es-CL").format(val);
-        }
-    </script>
-    <style>
-        body { background-color: #09090b; color: #fafafa; }
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
-    </style>
-</head>
-<body class="bg-zinc-950 text-zinc-50 antialiased">
-    <nav class="sticky top-0 z-50 bg-zinc-950/80 backdrop-blur-xl border-b border-zinc-800/50 px-4 md:px-12 py-4">
-        <div class="max-w-7xl mx-auto flex items-center gap-6">
-            <a href="/" class="p-2 hover:bg-zinc-800 rounded-xl transition-all text-zinc-400 hover:text-white">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-            </a>
-            <h1 class="text-xl md:text-2xl font-bold tracking-tight">Configuraciones</h1>
-        </div>
-    </nav>
-`))
+	w.Write([]byte(layoutHeader))
+	w.Write([]byte(RenderHeader("Configuraciones")))
+	w.Write([]byte(`<main class="max-w-7xl mx-auto px-6 md:px-12 pb-32 relative">`))
 	configTmpl.Execute(w, map[string]interface{}{"Tables": tables})
-	w.Write([]byte(`
-        <!-- NAVEGACIÓN INFERIOR -->
-        <nav class="fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] w-auto">
-            <div class="bg-zinc-900/90 backdrop-blur-2xl border border-zinc-800/50 p-1.5 rounded-full flex items-center gap-1 shadow-2xl">
-                <a href="/" class="px-6 py-3 rounded-full text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:text-zinc-200 transition-all">Comandas</a>
-                <a href="/cocina" class="px-6 py-3 rounded-full text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:text-zinc-200 transition-all">Cocina</a>
-                <a href="/config" class="px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-widest bg-blue-600 text-white shadow-lg shadow-blue-600/20">Ajustes</a>
-            </div>
-        </nav>
-    </body>
-    </html>`))
+	w.Write([]byte(`</main>`))
+	w.Write([]byte(RenderBottomBar("config")))
+	w.Write([]byte(layoutFooter))
 }
 
 func handleConfig(w http.ResponseWriter, _ *http.Request) { RenderConfigPage(w, nil) }
