@@ -71,17 +71,29 @@ const layoutHeader = `
             document.getElementById('mesa-input').value = name;
             document.getElementById('selected-mesa-display').innerText = name;
             
+            // Limpiar clases de animación previas
+            document.getElementById('view-order').classList.remove('animate-in', 'fade-in', 'slide-in-from-bottom-10');
+            
             // Transición visual: Ocultar grid de mesas, mostrar formulario de pedido
             document.getElementById('view-tables').classList.add('hidden');
             document.getElementById('view-order').classList.remove('hidden');
+            void document.getElementById('view-order').offsetWidth; // Force reflow
             document.getElementById('view-order').classList.add('animate-in', 'fade-in', 'slide-in-from-bottom-10', 'duration-500');
             
-            // Hacer scroll al inicio por si acaso
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
         function backToTables() {
+            // Limpiar buscador y resultados
+            document.getElementById('product-search').value = '';
+            document.getElementById('search-results').innerHTML = '';
+            document.getElementById('order-text').value = '';
+
+            // Limpiar clases de animación previas
+            document.getElementById('view-tables').classList.remove('animate-in', 'fade-in', 'slide-in-from-top-10');
+
             document.getElementById('view-tables').classList.remove('hidden');
             document.getElementById('view-order').classList.add('hidden');
+            void document.getElementById('view-tables').offsetWidth; // Force reflow
             document.getElementById('view-tables').classList.add('animate-in', 'fade-in', 'slide-in-from-top-10', 'duration-500');
         }
         function switchTab(tab, btn) {
