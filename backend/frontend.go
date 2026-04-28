@@ -124,8 +124,6 @@ const layoutHeader = `
     </style>
 </head>
 <body class="bg-zinc-950 text-zinc-50 antialiased overflow-x-hidden">
-    
-`
 `
 
 const layoutFooter = `
