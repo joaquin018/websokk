@@ -424,7 +424,7 @@ func RenderProductEditForm(w io.Writer, p Product) {
 			<textarea name="description" oninput="formatSentence(this)" class="bg-zinc-950/50 border border-zinc-700 p-3 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 text-xs h-20" required>%s</textarea>
 			<div class="flex gap-2">
 				<button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-500 py-3 rounded-xl font-black uppercase text-[10px] tracking-widest transition-all">Guardar Cambios</button>
-				<button type="button" hx-get="/api/products" hx-target="#product-list" class="px-6 bg-zinc-800 hover:bg-zinc-700 py-3 rounded-xl font-black uppercase text-[10px] tracking-widest transition-all">Cancelar</button>
+				<button type="button" hx-get="/api/products/item/%d" hx-target="#product-%d" hx-swap="outerHTML" class="px-6 bg-zinc-800 hover:bg-zinc-700 py-3 rounded-xl font-black uppercase text-[10px] tracking-widest transition-all">Cancelar</button>
 			</div>
-		</form>`, p.ID, p.ID, p.ID, p.Name, formatCLP(p.Price), p.Description)
+		</form>`, p.ID, p.ID, p.ID, p.Name, formatCLP(p.Price), p.Description, p.ID, p.ID)
 }

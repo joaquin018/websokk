@@ -220,6 +220,15 @@ func main() {
 		RenderProductEditForm(w, p)
 	})
 
+	http.HandleFunc("/api/products/item/", func(w http.ResponseWriter, r *http.Request) {
+		if db == nil { return }
+		idStr := strings.TrimPrefix(r.URL.Path, "/api/products/item/")
+		id, _ := strconv.Atoi(idStr)
+		var p Product
+		_ = db.QueryRow(context.Background(), "SELECT id, name, price, description FROM products WHERE id=$1", id).Scan(&p.ID, &p.Name, &p.Price, &p.Description)
+		w.Write([]byte(RenderProductItem(p)))
+	})
+
 	http.HandleFunc("/api/products/update/", func(w http.ResponseWriter, r *http.Request) {
 		if db == nil { return }
 		idStr := strings.TrimPrefix(r.URL.Path, "/api/products/update/")
