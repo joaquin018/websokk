@@ -235,7 +235,7 @@ func main() {
 		
 		var p Product
 		_ = db.QueryRow(context.Background(), "UPDATE products SET name=$1, price=$2, description=$3 WHERE id=$4 RETURNING id, name, price, description", name, price, description, id).Scan(&p.ID, &p.Name, &p.Price, &p.Description)
-		RenderProductItem(w, p)
+		w.Write([]byte(RenderProductItem(p)))
 	})
 
 	http.HandleFunc("/api/products/search", func(w http.ResponseWriter, r *http.Request) {

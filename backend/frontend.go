@@ -306,9 +306,10 @@ func RenderCocinaPage(w http.ResponseWriter, orders []Order) {
 
 func RenderOrderCard(id int, mesa, plato, estado string) string {
 	btnText, nextStatus, btnClass := "EMPEZAR", "proceso", "bg-zinc-800/50 hover:bg-zinc-700 text-zinc-400"
-	if estado == "proceso" {
+	switch estado {
+	case "proceso":
 		btnText, nextStatus, btnClass = "TERMINAR", "completado", "bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/20"
-	} else if estado == "completado" {
+	case "completado":
 		btnText, nextStatus, btnClass = "ENTREGAR", "delete", "bg-green-600 hover:bg-green-500 text-white shadow-lg shadow-green-600/20"
 	}
 
@@ -326,41 +327,35 @@ func RenderOrderCard(id int, mesa, plato, estado string) string {
 // -------------| Ajustes
 // -------------------------------------
 var configTmpl = template.Must(template.New("config").Parse(`
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 relative z-10">
-        <!-- Gestión de Mesas -->
-        <div class="lg:col-span-4 flex flex-col gap-8">
-            <div>
-                <h3 class="text-zinc-500 uppercase text-[10px] font-black tracking-widest mb-6 ml-2">Capacidad del Local</h3>
-                <form hx-post="/api/tables" hx-target="#table-list" class="flex flex-col gap-4 bg-zinc-900/40 p-6 rounded-[2rem] border border-zinc-800/50 backdrop-blur-md">
-                    <label class="text-[10px] text-zinc-500 uppercase font-black ml-1 tracking-widest">¿Cuántas mesas tienes?</label>
-                    <input type="number" name="count" min="1" max="50" placeholder="Ej: 10" class="bg-zinc-950/50 border border-zinc-800 p-4 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition-all text-2xl font-black text-center" required>
-                    <button type="submit" class="bg-zinc-100 text-black hover:bg-white py-4 rounded-xl font-black uppercase text-[10px] tracking-widest active:scale-95 transition-all">Generar Mesas Automáticamente</button>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 relative z-10">
+        <!-- Columna Izquierda: Formularios -->
+        <div class="flex flex-col gap-10">
+            <!-- Capacidad -->
+            <div class="bg-zinc-900/30 border border-zinc-800/50 p-8 rounded-[2rem] flex flex-col gap-6">
+                <h3 class="text-zinc-500 uppercase text-[9px] font-black tracking-[0.2em]">Capacidad del Local</h3>
+                <form hx-post="/api/tables" hx-target="#table-list" class="flex gap-4">
+                    <input type="number" name="count" min="1" max="50" value="8" class="flex-1 bg-zinc-950 border border-zinc-800 p-4 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition-all text-xl font-bold">
+                    <button type="submit" class="bg-white text-black px-8 rounded-xl font-black uppercase text-[10px] tracking-widest active:scale-95 transition-all">Aplicar</button>
                 </form>
+                <div id="table-list" class="hidden"></div> <!-- Hidden but needed for HTMX target -->
             </div>
-            <div id="table-list" class="grid grid-cols-2 gap-3 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar">
-                {{range .Tables}}
-                    <div class="p-3 bg-zinc-900/60 border border-zinc-800 rounded-xl text-center">
-                        <span class="font-bold text-zinc-400 text-xs">{{.Name}}</span>
-                    </div>
-                {{end}}
+
+            <!-- Nuevo Producto -->
+            <div class="bg-zinc-900/30 border border-zinc-800/50 p-8 rounded-[2rem] flex flex-col gap-6">
+                <h3 class="text-zinc-500 uppercase text-[9px] font-black tracking-[0.2em]">Nuevo Producto</h3>
+                <form hx-post="/api/products" hx-target="#product-list" hx-on::after-request="this.reset()" class="flex flex-col gap-4">
+                    <input type="text" name="name" oninput="formatName(this)" placeholder="Nombre" class="bg-zinc-950 border border-zinc-800 p-4 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm font-medium">
+                    <input type="text" name="price" oninput="formatPrice(this)" placeholder="Precio" class="bg-zinc-950 border border-zinc-800 p-4 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm font-medium">
+                    <textarea name="description" oninput="formatSentence(this)" placeholder="Descripcion" class="bg-zinc-950 border border-zinc-800 p-4 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 h-32 transition-all text-sm font-medium"></textarea>
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white py-4 rounded-xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-blue-900/20 active:scale-95 transition-all">Guardar Producto</button>
+                </form>
             </div>
         </div>
 
-        <!-- Gestión del Menú -->
-        <div class="lg:col-span-8 flex flex-col gap-8">
-            <div>
-                <h3 class="text-zinc-500 uppercase text-[10px] font-black tracking-widest mb-6 ml-2">Nuevo Producto</h3>
-                <form hx-post="/api/products" hx-target="#product-list" hx-on::after-request="this.reset()" class="grid grid-cols-1 md:grid-cols-2 gap-5 bg-zinc-900/40 p-6 md:p-8 rounded-[2.5rem] border border-zinc-800/50 backdrop-blur-md">
-                    <div class="flex flex-col gap-4">
-                        <input type="text" name="name" oninput="formatName(this)" placeholder="Nombre del Producto" class="bg-zinc-950/50 border border-zinc-800 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 transition-all" required>
-                        <input type="text" name="price" oninput="formatPrice(this)" placeholder="Precio (CLP)" class="bg-zinc-950/50 border border-zinc-800 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 transition-all" required>
-                    </div>
-                    <textarea name="description" oninput="formatSentence(this)" placeholder="Descripción breve..." class="bg-zinc-950/50 border border-zinc-800 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 h-full min-h-[120px] transition-all" required></textarea>
-                    <button type="submit" class="md:col-span-2 bg-blue-600 hover:bg-blue-500 py-5 rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl shadow-blue-900/20 active:scale-95 transition-all">Guardar en el Menú</button>
-                </form>
-            </div>
-            <div id="product-list" hx-get="/api/products" hx-trigger="load" class="grid grid-cols-1 gap-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
-                <div class="p-8 text-center border-2 border-dashed border-zinc-900 rounded-[2rem] text-zinc-700 font-bold uppercase text-[10px] tracking-widest">Cargando inventario...</div>
+        <!-- Columna Derecha: Lista de Productos -->
+        <div class="flex flex-col gap-4">
+            <div id="product-list" hx-get="/api/products" hx-trigger="load" class="flex flex-col gap-4 max-h-[80vh] overflow-y-auto pr-2 custom-scrollbar">
+                <!-- Los productos se cargan aquí -->
             </div>
         </div>
     </div>
@@ -368,7 +363,7 @@ var configTmpl = template.Must(template.New("config").Parse(`
 
 func RenderConfigPage(w http.ResponseWriter, tables []Table) {
 	w.Write([]byte(layoutHeader))
-	w.Write([]byte(RenderHeader("Configuraciones")))
+	w.Write([]byte(RenderHeader("Configuración")))
 	w.Write([]byte(`<main class="max-w-7xl mx-auto px-6 md:px-12 pb-32 relative">`))
 	configTmpl.Execute(w, map[string]interface{}{"Tables": tables})
 	w.Write([]byte(`</main>`))
@@ -397,27 +392,30 @@ func RenderProductList(w io.Writer, products []Product) {
 		return
 	}
 	for _, p := range products {
-		RenderProductItem(w, p)
+		w.Write([]byte(RenderProductItem(p)))
 	}
 }
 
-func RenderProductItem(w io.Writer, p Product) {
-	fmt.Fprintf(w, `
-		<div id="product-%d" class="p-5 md:p-6 bg-zinc-900/60 border border-zinc-800/50 rounded-3xl flex justify-between items-center animate-in fade-in slide-in-from-right-4 duration-300 group hover:border-zinc-700 transition-all">
+func RenderProductItem(p Product) string {
+	return fmt.Sprintf(`
+		<div id="product-%d" class="p-6 bg-zinc-900/30 border border-zinc-800/50 rounded-2xl flex justify-between items-center group hover:bg-zinc-900/50 transition-all duration-300 animate-in fade-in slide-in-from-right-4">
 			<div class="flex flex-col gap-1">
-				<h4 class="font-black text-white text-base md:text-lg group-hover:text-blue-400 transition-colors">%s</h4>
-				<p class="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">%s</p>
-				<span class="font-black text-blue-500 text-lg md:text-xl tracking-tighter">%s</span>
+				<h4 class="font-black text-white text-sm md:text-base uppercase tracking-tight">%s</h4>
+				<span class="font-bold text-blue-500 text-sm md:text-base">%s</span>
 			</div>
-			<div class="flex gap-2">
-				<button hx-get="/api/products/edit/%d" hx-target="#product-%d" hx-swap="outerHTML" class="p-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white rounded-xl transition-all">
+			<div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+				<button hx-get="/api/products/edit/%d" hx-target="#product-%d" hx-swap="outerHTML" class="p-3 text-zinc-500 hover:text-white transition-all">
 					<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
 				</button>
-				<button hx-delete="/api/products/delete/%d" hx-target="#product-%d" hx-swap="outerHTML" hx-confirm="¿Seguro que quieres eliminar %s?" class="p-3 bg-zinc-800 hover:bg-red-900/50 text-zinc-400 hover:text-red-400 rounded-xl transition-all">
-					<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+				<button hx-delete="/api/products/delete/%d" hx-target="#product-%d" hx-swap="outerHTML" hx-confirm="¿Eliminar %s?" class="p-3 text-zinc-500 hover:text-red-400 transition-all">
+					<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
 				</button>
 			</div>
-		</div>`, p.ID, p.Name, p.Description, formatCLP(p.Price), p.ID, p.ID, p.ID, p.ID, p.Name)
+            <!-- Botón de papelera siempre visible según la imagen, pero ajustado a la derecha -->
+            <button hx-delete="/api/products/delete/%d" hx-target="#product-%d" hx-swap="outerHTML" hx-confirm="¿Eliminar %s?" class="p-3 bg-zinc-800/50 text-zinc-500 hover:text-red-400 rounded-xl transition-all block md:hidden group-hover:block">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+            </button>
+		</div>`, p.ID, p.Name, formatCLP(p.Price), p.ID, p.ID, p.ID, p.ID, p.Name, p.ID, p.ID, p.Name)
 }
 
 func RenderProductEditForm(w io.Writer, p Product) {
