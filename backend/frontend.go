@@ -305,7 +305,7 @@ func RenderMainPage(w http.ResponseWriter, tables []Table, orders []Order, produ
                         </div>
                         <div id="search-results" class="mt-4 grid grid-cols-1 gap-2"></div>
                     </div>
-                    <form hx-post="/api/orders" hx-swap="none" hx-on::after-request="this.reset(); backToTables()" class="flex flex-col gap-6">
+                    <form hx-post="/api/orders" hx-swap="none" hx-on:htmx:after-request="setTimeout(() => { this.reset(); backToTables(); }, 100)" class="flex flex-col gap-6">
                         <input type="hidden" name="mesa" id="mesa-input">
                         <div>
                             <label class="block text-[10px] text-zinc-500 uppercase font-black mb-3 ml-1 tracking-widest">Detalles del Pedido</label>
