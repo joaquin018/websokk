@@ -71,30 +71,22 @@ const layoutHeader = `
             document.getElementById('mesa-input').value = name;
             document.getElementById('selected-mesa-display').innerText = name;
             
-            // Limpiar clases de animación previas
-            document.getElementById('view-order').classList.remove('animate-in', 'fade-in', 'slide-in-from-bottom-10');
-            
-            // Transición visual: Ocultar grid de mesas, mostrar formulario de pedido
+            // Resetear estados visuales
             document.getElementById('view-tables').classList.add('hidden');
             document.getElementById('view-order').classList.remove('hidden');
-            void document.getElementById('view-order').offsetWidth; // Force reflow
-            document.getElementById('view-order').classList.add('animate-in', 'fade-in', 'slide-in-from-bottom-10', 'duration-500');
             
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            // Forzar scroll arriba
+            window.scrollTo(0,0);
         }
         function backToTables() {
-            // Limpiar buscador y resultados
+            // Limpiar datos
             document.getElementById('product-search').value = '';
             document.getElementById('search-results').innerHTML = '';
             document.getElementById('order-text').value = '';
 
-            // Limpiar clases de animación previas
-            document.getElementById('view-tables').classList.remove('animate-in', 'fade-in', 'slide-in-from-top-10');
-
-            document.getElementById('view-tables').classList.remove('hidden');
+            // Cambiar vista
             document.getElementById('view-order').classList.add('hidden');
-            void document.getElementById('view-tables').offsetWidth; // Force reflow
-            document.getElementById('view-tables').classList.add('animate-in', 'fade-in', 'slide-in-from-top-10', 'duration-500');
+            document.getElementById('view-tables').classList.remove('hidden');
         }
         function switchTab(tab, btn) {
             // Ocultar todas las secciones principales
@@ -313,7 +305,7 @@ func RenderMainPage(w http.ResponseWriter, tables []Table, orders []Order, produ
                         </div>
                         <div id="search-results" class="mt-4 grid grid-cols-1 gap-2"></div>
                     </div>
-                    <form hx-post="/api/orders" hx-on::after-request="this.reset(); backToTables()" class="flex flex-col gap-6">
+                    <form hx-post="/api/orders" hx-swap="none" hx-on::after-request="this.reset(); backToTables()" class="flex flex-col gap-6">
                         <input type="hidden" name="mesa" id="mesa-input">
                         <div>
                             <label class="block text-[10px] text-zinc-500 uppercase font-black mb-3 ml-1 tracking-widest">Detalles del Pedido</label>
