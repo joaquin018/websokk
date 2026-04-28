@@ -300,23 +300,11 @@ func main() {
 			err := db.QueryRow(context.Background(), "INSERT INTO orders (plato, mesa, estado) VALUES ($1, $2, 'pendiente') RETURNING id", plato, mesa).Scan(&id)
 			if err != nil { return }
 			
-			html := fmt.Sprintf(`<div id="pedidos-col" hx-swap-oob="beforeend">%s</div>`, RenderOrderCard(id, mesa, plato, "pendiente"))
+			html := fmt.Sprintf(`<div id="col-pendiente" hx-swap-oob="beforeend">%s</div>`, RenderOrderCard(id, mesa, plato, "pendiente"))
 			hub.broadcast <- []byte(html)
 			
-			w.Write([]byte(`
-				<form hx-post="/api/orders" hx-swap="none" hx-on::after-request="this.reset()" class="flex flex-col gap-6 bg-zinc-900/20 p-6 md:p-8 rounded-[2rem] border border-zinc-800/50 backdrop-blur-sm">
-					<div>
-						<label class="block text-[10px] text-zinc-500 uppercase font-black mb-3 ml-1 tracking-widest">Ubicación / Mesa</label>
-						<input type="text" name="mesa" placeholder="Ej: Mesa 12" class="w-full bg-zinc-950/50 border border-zinc-800 p-4 md:p-5 rounded-2xl md:rounded-3xl focus:ring-2 focus:ring-blue-500 outline-none transition-all text-xl font-bold" required>
-					</div>
-					<div>
-						<label class="block text-[10px] text-zinc-500 uppercase font-black mb-3 ml-1 tracking-widest">Pedido Detallado</label>
-						<textarea id="order-text" name="plato" placeholder="Los productos seleccionados aparecerán aquí..." class="w-full bg-zinc-950/50 border border-zinc-800 p-4 md:p-5 rounded-2xl md:rounded-3xl focus:ring-2 focus:ring-blue-500 outline-none h-48 transition-all font-medium text-lg leading-relaxed" required></textarea>
-					</div>
-					<button type="submit" class="group relative overflow-hidden bg-white text-black py-5 md:py-6 rounded-2xl md:rounded-3xl font-black text-xl shadow-2xl active:scale-95 transition-all mt-4">
-						<span class="relative z-10 flex items-center justify-center gap-3">ENVIAR A COCINA <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></svg></span>
-					</button>
-				</form>`))
+			w.WriteHeader(http.StatusOK)
+`))
 		}
 	})
 
@@ -336,8 +324,8 @@ func main() {
 		var mesa, plato string
 		_ = db.QueryRow(context.Background(), "UPDATE orders SET estado=$1 WHERE id=$2 RETURNING mesa, plato", newStatus, id).Scan(&mesa, &plato)
 		
-		targetCol := "proceso-col"
-		if newStatus == "completado" { targetCol = "completado-col" }
+		targetCol := "col-proceso"
+		if newStatus == "completado" { targetCol = "col-completado" }
 		
 		html := fmt.Sprintf(`
 			<div id="order-%d" hx-swap-oob="delete"></div>

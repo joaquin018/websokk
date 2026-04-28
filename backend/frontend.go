@@ -306,7 +306,7 @@ func RenderMainPage(w http.ResponseWriter, tables []Table, orders []Order, produ
                     <div class="mb-10">
                         <label class="block text-[10px] text-zinc-500 uppercase font-black mb-4 ml-1 tracking-widest">Buscador de Productos</label>
                         <div class="relative group">
-                            <input type="text" id="product-search" hx-get="/api/products/search" hx-trigger="keyup changed delay:300ms" hx-target="#search-results" placeholder="Escribe el nombre del producto..." class="w-full bg-zinc-950 border-2 border-zinc-800/50 p-5 pl-14 rounded-3xl outline-none focus:border-blue-600 transition-all text-xl font-bold">
+                            <input type="text" id="product-search" name="q" hx-get="/api/products/search" hx-trigger="keyup changed delay:300ms" hx-target="#search-results" placeholder="Escribe el nombre del producto..." class="w-full bg-zinc-950 border-2 border-zinc-800/50 p-5 pl-14 rounded-3xl outline-none focus:border-blue-600 transition-all text-xl font-bold">
                             <div class="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-blue-500 transition-colors"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></div>
                         </div>
                         <div id="search-results" class="mt-4 grid grid-cols-1 gap-2"></div>
